@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mjolnir/core/app_colors.dart';
 import 'package:mjolnir/models/exercise.dart';
 import 'package:mjolnir/models/routine.dart';
+import 'package:mjolnir/services/storage_service.dart';
 
 class RoutineScreen extends StatefulWidget {
   const RoutineScreen({super.key});
@@ -15,18 +16,37 @@ class _RoutineScreenState extends State<RoutineScreen> {
     Routine(
       name: 'Día de pecho',
       exercises: [
-        Exercise(name: 'Press banca', sets: 4, reps: 10, weight: 60),
-        Exercise(name: 'Aperturas', sets: 3, reps: 12, weight: 20),
+        Exercise(name: 'Press banca', sets: 4, reps: 10, weight: 0),
+        Exercise(name: 'Aperturas', sets: 3, reps: 12, weight: 0),
       ],
     ),
     Routine(
       name: 'Día de piernas',
       exercises: [
-        Exercise(name: 'Sentadilla', sets: 4, reps: 8, weight: 80),
-        Exercise(name: 'Prensa', sets: 3, reps: 12, weight: 120),
+        Exercise(name: 'Sentadilla', sets: 4, reps: 8, weight: 0),
+        Exercise(name: 'Prensa', sets: 3, reps: 12, weight: 0),
       ],
     ),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAllWeights();
+  }
+
+  Future<void> _loadAllWeights() async {
+    for (final routine in routines) {
+      for (final exercise in routine.exercises) {
+        final saved = await StorageService.loadWeight(exercise.name);
+        if (saved != null) {
+          setState(() {
+            exercise.weight = saved;
+          });
+        }
+      }
+    }
+  }
 
   void _editWeight(Exercise exercise) {
     final controller = TextEditingController(
@@ -56,13 +76,14 @@ class _RoutineScreenState extends State<RoutineScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Cancelar',
+            child: const Text('Cancelar',
                 style: TextStyle(color: Colors.white60)),
           ),
           TextButton(
-            onPressed: () {
+            onPressed: () async {
               final newWeight = double.tryParse(controller.text);
               if (newWeight != null) {
+                await StorageService.saveWeight(exercise.name, newWeight);
                 setState(() {
                   exercise.weight = newWeight;
                 });
