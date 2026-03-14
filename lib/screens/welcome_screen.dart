@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mjolnir/components/menu_button.dart';
 import 'package:mjolnir/core/app_colors.dart';
+import 'package:mjolnir/screens/exercise_screen.dart';
 import 'package:mjolnir/screens/routine_screen.dart';
 
 class WelcomeScreen extends StatelessWidget {
@@ -31,7 +32,15 @@ class WelcomeScreen extends StatelessWidget {
                 );
               },
             ),
-            MenuButton(title: 'EJERCICIOS', onPressed: () {}),
+            MenuButton(
+              title: 'EJERCICIOS',
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => ExerciseScreen()),
+                );
+              },
+            ),
             MenuButton(title: 'PROGRESO', onPressed: () {}),
             MenuButton(title: 'CONFIGURACION', onPressed: () {}),
           ],
