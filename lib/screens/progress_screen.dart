@@ -16,6 +16,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
   List<Exercise> exercises = [];
   Exercise? selectedExercise;
   List<WeightEntry> history = [];
+  String _unit = 'kg';
 
   @override
   void initState() {
@@ -25,8 +26,10 @@ class _ProgressScreenState extends State<ProgressScreen> {
 
   Future<void> _loadExercises() async {
     final saved = await StorageService.loadExercises();
+    final unit = await StorageService.loadUnit();
     setState(() {
       exercises = saved;
+      _unit = unit;
       if (saved.isNotEmpty) {
         selectedExercise = saved.first;
         _loadHistory(saved.first.name);
@@ -67,8 +70,6 @@ class _ProgressScreenState extends State<ProgressScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-
-            // Selector de ejercicio
             DropdownButtonFormField<Exercise>(
               value: selectedExercise,
               dropdownColor: AppColors.backgroundAppBar,
@@ -84,10 +85,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
                 ),
               ),
               items: exercises.map((e) {
-                return DropdownMenuItem(
-                  value: e,
-                  child: Text(e.name),
-                );
+                return DropdownMenuItem(value: e, child: Text(e.name));
               }).toList(),
               onChanged: (exercise) {
                 if (exercise == null) return;
@@ -95,10 +93,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
                 _loadHistory(exercise.name);
               },
             ),
-
             const SizedBox(height: 32),
-
-            // Gráfico o mensaje vacío
             if (history.length < 2)
               Expanded(
                 child: Center(
@@ -117,14 +112,10 @@ class _ProgressScreenState extends State<ProgressScreen> {
                   LineChartData(
                     gridData: FlGridData(
                       show: true,
-                      getDrawingHorizontalLine: (_) => FlLine(
-                        color: Colors.white10,
-                        strokeWidth: 1,
-                      ),
-                      getDrawingVerticalLine: (_) => FlLine(
-                        color: Colors.white10,
-                        strokeWidth: 1,
-                      ),
+                      getDrawingHorizontalLine: (_) =>
+                          FlLine(color: Colors.white10, strokeWidth: 1),
+                      getDrawingVerticalLine: (_) =>
+                          FlLine(color: Colors.white10, strokeWidth: 1),
                     ),
                     borderData: FlBorderData(
                       show: true,
@@ -134,28 +125,38 @@ class _ProgressScreenState extends State<ProgressScreen> {
                       leftTitles: AxisTitles(
                         sideTitles: SideTitles(
                           showTitles: true,
-                          reservedSize: 40,
+                          reservedSize: 50,
                           getTitlesWidget: (value, _) => Text(
-                            '${value.toInt()} kg',
+                            '${value.toInt()} $_unit',
                             style: const TextStyle(
-                                color: Colors.white60, fontSize: 10),
+                              color: Colors.white60,
+                              fontSize: 10,
+                            ),
                           ),
                         ),
                       ),
                       bottomTitles: AxisTitles(
                         sideTitles: SideTitles(
                           showTitles: true,
-                          getTitlesWidget: (value, _) => Text(
-                            _formatDate(value.toInt()),
-                            style: const TextStyle(
-                                color: Colors.white60, fontSize: 10),
+                          reservedSize: 28,
+                          getTitlesWidget: (value, _) => Padding(
+                            padding: const EdgeInsets.only(top: 8),
+                            child: Text(
+                              _formatDate(value.toInt()),
+                              style: const TextStyle(
+                                color: Colors.white60,
+                                fontSize: 10,
+                              ),
+                            ),
                           ),
                         ),
                       ),
                       rightTitles: AxisTitles(
-                          sideTitles: SideTitles(showTitles: false)),
+                        sideTitles: SideTitles(showTitles: false),
+                      ),
                       topTitles: AxisTitles(
-                          sideTitles: SideTitles(showTitles: false)),
+                        sideTitles: SideTitles(showTitles: false),
+                      ),
                     ),
                     lineBarsData: [
                       LineChartBarData(
@@ -169,11 +170,11 @@ class _ProgressScreenState extends State<ProgressScreen> {
                           show: true,
                           getDotPainter: (_, __, ___, ____) =>
                               FlDotCirclePainter(
-                            radius: 5,
-                            color: AppColors.primary,
-                            strokeWidth: 2,
-                            strokeColor: Colors.white,
-                          ),
+                                radius: 5,
+                                color: AppColors.primary,
+                                strokeWidth: 2,
+                                strokeColor: Colors.white,
+                              ),
                         ),
                         belowBarData: BarAreaData(
                           show: true,

@@ -4,7 +4,6 @@ import 'package:mjolnir/models/exercise.dart';
 import 'package:mjolnir/models/weight_entry.dart';
 
 class StorageService {
-
   // --- Pesos de ejercicios en rutinas ---
 
   static Future<void> saveWeight(String exerciseName, double weight) async {
@@ -40,7 +39,7 @@ class StorageService {
     final prefs = await SharedPreferences.getInstance();
     final key = 'history_$exerciseName';
     final jsonString = prefs.getString(key);
-    
+
     List<WeightEntry> history = [];
     if (jsonString != null) {
       final jsonList = jsonDecode(jsonString) as List;
@@ -49,14 +48,31 @@ class StorageService {
 
     history.add(WeightEntry(date: DateTime.now(), weight: weight));
 
-    await prefs.setString(key, jsonEncode(history.map((e) => e.toJson()).toList()));
+    await prefs.setString(
+      key,
+      jsonEncode(history.map((e) => e.toJson()).toList()),
+    );
   }
 
-  static Future<List<WeightEntry>> loadWeightHistory(String exerciseName) async {
+  static Future<List<WeightEntry>> loadWeightHistory(
+    String exerciseName,
+  ) async {
     final prefs = await SharedPreferences.getInstance();
     final jsonString = prefs.getString('history_$exerciseName');
     if (jsonString == null) return [];
     final jsonList = jsonDecode(jsonString) as List;
     return jsonList.map((e) => WeightEntry.fromJson(e)).toList();
+  }
+
+  // --- Unidad de peso ---
+
+  static Future<void> saveUnit(String unit) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('weight_unit', unit);
+  }
+
+  static Future<String> loadUnit() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('weight_unit') ?? 'kg';
   }
 }

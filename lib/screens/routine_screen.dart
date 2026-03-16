@@ -12,21 +12,24 @@ class RoutineScreen extends StatefulWidget {
 
 class _RoutineScreenState extends State<RoutineScreen> {
   List<Exercise> exercises = [];
+  String _unit = 'kg';
 
   @override
   void initState() {
     super.initState();
-    _loadExercises();
+    _loadData();
   }
 
-  Future<void> _loadExercises() async {
+  Future<void> _loadData() async {
     final saved = await StorageService.loadExercises();
+    final unit = await StorageService.loadUnit();
     for (final exercise in saved) {
       final savedWeight = await StorageService.loadWeight(exercise.name);
       if (savedWeight != null) exercise.weight = savedWeight;
     }
     setState(() {
       exercises = saved;
+      _unit = unit;
     });
   }
 
@@ -48,7 +51,7 @@ class _RoutineScreenState extends State<RoutineScreen> {
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
           style: const TextStyle(color: Colors.white),
           decoration: InputDecoration(
-            labelText: 'Peso (kg)',
+            labelText: 'Peso ($_unit)',
             labelStyle: TextStyle(color: AppColors.primary),
             enabledBorder: UnderlineInputBorder(
               borderSide: BorderSide(color: AppColors.primary),
@@ -66,9 +69,7 @@ class _RoutineScreenState extends State<RoutineScreen> {
               final newWeight = double.tryParse(controller.text);
               if (newWeight != null) {
                 await StorageService.saveWeight(exercise.name, newWeight);
-                setState(() {
-                  exercise.weight = newWeight;
-                });
+                setState(() => exercise.weight = newWeight);
               }
               Navigator.pop(context);
             },
@@ -125,7 +126,7 @@ class _RoutineScreenState extends State<RoutineScreen> {
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
-                          '${exercise.weight} kg',
+                          '${exercise.weight} $_unit',
                           style: TextStyle(
                             color: AppColors.primary,
                             fontWeight: FontWeight.bold,

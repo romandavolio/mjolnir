@@ -4,6 +4,7 @@ import 'package:mjolnir/core/app_colors.dart';
 import 'package:mjolnir/screens/exercise_screen.dart';
 import 'package:mjolnir/screens/progress_screen.dart';
 import 'package:mjolnir/screens/routine_screen.dart';
+import 'package:mjolnir/screens/config_screen.dart';
 
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key});
@@ -93,28 +94,37 @@ class WelcomeScreen extends StatelessWidget {
           label: 'RUTINAS',
           subtitle: 'Ver mis rutinas',
           icon: Icons.fitness_center,
-          onPressed: () => Navigator.push(context,
-              MaterialPageRoute(builder: (_) => const RoutineScreen())),
+          onPressed: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const RoutineScreen()),
+          ),
         ),
         GridButton(
           label: 'EJERCICIOS',
           subtitle: 'Gestionar',
           icon: Icons.format_list_bulleted,
-          onPressed: () => Navigator.push(context,
-              MaterialPageRoute(builder: (_) => const ExerciseScreen())),
+          onPressed: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const ExerciseScreen()),
+          ),
         ),
         GridButton(
           label: 'PROGRESO',
           subtitle: 'Ver evolución',
           icon: Icons.show_chart,
-          onPressed: () => Navigator.push(context,
-              MaterialPageRoute(builder: (_) => const ProgressScreen())),
+          onPressed: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const ProgressScreen()),
+          ),
         ),
         GridButton(
           label: 'CONFIG',
           subtitle: 'Preferencias',
           icon: Icons.settings_outlined,
-          onPressed: () {},
+          onPressed: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const ConfigScreen()),
+          ),
         ),
       ],
     );
@@ -133,22 +143,34 @@ class _HammerPainter extends CustomPainter {
       ..style = PaintingStyle.fill;
 
     final headRect = RRect.fromRectAndRadius(
-      Rect.fromLTWH(size.width * 0.25, size.height * 0.05,
-          size.width * 0.6, size.height * 0.38),
+      Rect.fromLTWH(
+        size.width * 0.25,
+        size.height * 0.05,
+        size.width * 0.6,
+        size.height * 0.38,
+      ),
       const Radius.circular(3),
     );
     canvas.drawRRect(headRect, paint);
 
     final leftRect = RRect.fromRectAndRadius(
-      Rect.fromLTWH(size.width * 0.02, size.height * 0.12,
-          size.width * 0.28, size.height * 0.24),
+      Rect.fromLTWH(
+        size.width * 0.02,
+        size.height * 0.12,
+        size.width * 0.28,
+        size.height * 0.24,
+      ),
       const Radius.circular(2),
     );
     canvas.drawRRect(leftRect, paint);
 
     final handleRect = RRect.fromRectAndRadius(
-      Rect.fromLTWH(size.width * 0.42, size.height * 0.42,
-          size.width * 0.18, size.height * 0.54),
+      Rect.fromLTWH(
+        size.width * 0.42,
+        size.height * 0.42,
+        size.width * 0.18,
+        size.height * 0.54,
+      ),
       const Radius.circular(2),
     );
     canvas.drawRRect(handleRect, darkPaint);
