@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mjolnir/core/app_colors.dart';
 import 'package:mjolnir/models/exercise.dart';
-import 'package:mjolnir/models/routine.dart';
 import 'package:mjolnir/services/storage_service.dart';
 
 class RoutineScreen extends StatefulWidget {
@@ -12,40 +11,23 @@ class RoutineScreen extends StatefulWidget {
 }
 
 class _RoutineScreenState extends State<RoutineScreen> {
-  final List<Routine> routines = [
-    Routine(
-      name: 'Día de pecho',
-      exercises: [
-        Exercise(name: 'Press banca', sets: 4, reps: 10, weight: 0),
-        Exercise(name: 'Aperturas', sets: 3, reps: 12, weight: 0),
-      ],
-    ),
-    Routine(
-      name: 'Día de piernas',
-      exercises: [
-        Exercise(name: 'Sentadilla', sets: 4, reps: 8, weight: 0),
-        Exercise(name: 'Prensa', sets: 3, reps: 12, weight: 0),
-      ],
-    ),
-  ];
+  List<Exercise> exercises = [];
 
   @override
   void initState() {
     super.initState();
-    _loadAllWeights();
+    _loadExercises();
   }
 
-  Future<void> _loadAllWeights() async {
-    for (final routine in routines) {
-      for (final exercise in routine.exercises) {
-        final saved = await StorageService.loadWeight(exercise.name);
-        if (saved != null) {
-          setState(() {
-            exercise.weight = saved;
-          });
-        }
-      }
+  Future<void> _loadExercises() async {
+    final saved = await StorageService.loadExercises();
+    for (final exercise in saved) {
+      final savedWeight = await StorageService.loadWeight(exercise.name);
+      if (savedWeight != null) exercise.weight = savedWeight;
     }
+    setState(() {
+      exercises = saved;
+    });
   }
 
   void _editWeight(Exercise exercise) {
@@ -107,56 +89,54 @@ class _RoutineScreenState extends State<RoutineScreen> {
         backgroundColor: AppColors.backgroundAppBar,
         foregroundColor: AppColors.primary,
       ),
-      body: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: routines.length,
-        itemBuilder: (context, index) {
-          final routine = routines[index];
-          return Card(
-            color: AppColors.backgroundAppBar,
-            margin: const EdgeInsets.only(bottom: 16),
-            child: ExpansionTile(
-              title: Text(
-                routine.name,
-                style: TextStyle(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.bold,
-                ),
+      body: exercises.isEmpty
+          ? const Center(
+              child: Text(
+                'No hay ejercicios todavía.\nCreá uno desde la pantalla Ejercicios.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.white60, fontSize: 15),
               ),
-              children: routine.exercises.map((exercise) {
-                return ListTile(
-                  title: Text(
-                    exercise.name,
-                    style: const TextStyle(color: Colors.white),
-                  ),
-                  subtitle: Text(
-                    '${exercise.sets} series x ${exercise.reps} reps',
-                    style: const TextStyle(color: Colors.white60),
-                  ),
-                  trailing: GestureDetector(
-                    onTap: () => _editWeight(exercise),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        border: Border.all(color: AppColors.primary),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        '${exercise.weight} kg',
-                        style: TextStyle(
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.bold,
+            )
+          : ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: exercises.length,
+              itemBuilder: (context, index) {
+                final exercise = exercises[index];
+                return Card(
+                  color: AppColors.backgroundAppBar,
+                  margin: const EdgeInsets.only(bottom: 12),
+                  child: ListTile(
+                    title: Text(
+                      exercise.name,
+                      style: const TextStyle(
+                          color: Colors.white, fontWeight: FontWeight.bold),
+                    ),
+                    subtitle: Text(
+                      '${exercise.sets} series x ${exercise.reps} reps',
+                      style: const TextStyle(color: Colors.white60),
+                    ),
+                    trailing: GestureDetector(
+                      onTap: () => _editWeight(exercise),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: AppColors.primary),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          '${exercise.weight} kg',
+                          style: TextStyle(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                     ),
                   ),
                 );
-              }).toList(),
+              },
             ),
-          );
-        },
-      ),
     );
   }
 }

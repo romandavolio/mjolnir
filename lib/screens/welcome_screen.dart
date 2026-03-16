@@ -3,6 +3,7 @@ import 'package:mjolnir/components/menu_button.dart';
 import 'package:mjolnir/core/app_colors.dart';
 import 'package:mjolnir/screens/exercise_screen.dart';
 import 'package:mjolnir/screens/routine_screen.dart';
+import 'package:mjolnir/screens/progress_screen.dart';
 
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key});
@@ -41,7 +42,15 @@ class WelcomeScreen extends StatelessWidget {
                 );
               },
             ),
-            MenuButton(title: 'PROGRESO', onPressed: () {}),
+            MenuButton(
+              title: 'PROGRESO',
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => ProgressScreen()),
+                );
+              },
+            ),
             MenuButton(title: 'CONFIGURACION', onPressed: () {}),
           ],
         ),
