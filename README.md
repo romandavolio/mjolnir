@@ -4,31 +4,33 @@ Aplicación móvil para gestión de rutinas de gimnasio, desarrollada con Flutte
 
 ## ¿Qué hace?
 
-Permite a un personal trainer asignar rutinas a sus alumnos. Cada alumno puede ver sus ejercicios y registrar el peso utilizado en cada serie.
+Permite gestionar ejercicios, rutinas y registrar el progreso de peso a lo largo del tiempo. Diseñada para uso personal o entre un personal trainer y sus alumnos.
 
-## Funcionalidades actuales
+## Funcionalidades
 
-- Pantalla de bienvenida con menú principal
-- Visualización de rutinas asignadas
-- Detalle de ejercicios por rutina (series, repeticiones y peso)
-- Edición del peso por ejercicio
+- Pantalla de bienvenida con diseño personalizado
+- Gestión de ejercicios: crear, editar y eliminar
+- Visualización de rutinas con registro de peso por ejercicio
+- Historial de progreso con gráfico de evolución por ejercicio
+- Configuración de unidad de peso (kg / lb)
+- Persistencia de datos local (los cambios sobreviven al cerrar la app)
 
 ## En desarrollo
 
-- Persistencia de datos (los cambios sobreviven al cerrar la app)
-- Pantalla de ejercicios
-- Registro de progreso histórico
-- Configuración de perfil
+- Perfiles de trainer y alumno
+- Asignación de rutinas por alumno
+- Registro de progreso histórico ampliado
 
 ## Tecnologías
 
-- [Flutter](https://flutter.dev/)
-- Dart
-- Arquitectura basada en widgets con separación en capas (models, screens, components, core)
+- [Flutter](https://flutter.dev/) / Dart
+- shared_preferences — persistencia local
+- fl_chart — gráficos de progreso
+- Arquitectura por capas: models, screens, components, services, core
 
 ## Capturas
 
-![routine_screen](routine_screen.png)
+![Pantalla de rutinas](routine_screen.png)
 
 ## Cómo correrlo
 
