@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:mjolnir/components/menu_button.dart';
+import 'package:mjolnir/components/grid_button.dart';
 import 'package:mjolnir/core/app_colors.dart';
 import 'package:mjolnir/screens/exercise_screen.dart';
-import 'package:mjolnir/screens/routine_screen.dart';
 import 'package:mjolnir/screens/progress_screen.dart';
+import 'package:mjolnir/screens/routine_screen.dart';
 
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key});
@@ -12,49 +12,148 @@ class WelcomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: const Text('Welcome'),
-        backgroundColor: AppColors.backgroundAppBar,
-        foregroundColor: AppColors.primary,
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(24),
-        child: GridView.count(
-          crossAxisCount: 2, // 2 columnas → 2x2
-          mainAxisSpacing: 16,
-          crossAxisSpacing: 16,
-          children: [
-            MenuButton(
-              title: 'RUTINAS',
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => RoutineScreen()),
-                );
-              },
-            ),
-            MenuButton(
-              title: 'EJERCICIOS',
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => ExerciseScreen()),
-                );
-              },
-            ),
-            MenuButton(
-              title: 'PROGRESO',
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => ProgressScreen()),
-                );
-              },
-            ),
-            MenuButton(title: 'CONFIGURACION', onPressed: () {}),
-          ],
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildHeader(),
+              const SizedBox(height: 8),
+              _buildDivider(),
+              const SizedBox(height: 28),
+              Expanded(child: _buildGrid(context)),
+            ],
+          ),
         ),
       ),
     );
   }
+
+  Widget _buildHeader() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            SizedBox(
+              width: 32,
+              height: 32,
+              child: CustomPaint(painter: _HammerPainter()),
+            ),
+            const SizedBox(width: 12),
+            const Text(
+              'MJOLNIR',
+              style: TextStyle(
+                color: AppColors.primary,
+                fontSize: 32,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 6,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        const Padding(
+          padding: EdgeInsets.only(left: 44),
+          child: Text(
+            'TU ENTRENAMIENTO, TU PROGRESO',
+            style: TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 2.5,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDivider() {
+    return Container(
+      height: 1,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [AppColors.primary.withOpacity(0.6), Colors.transparent],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGrid(BuildContext context) {
+    return GridView.count(
+      crossAxisCount: 2,
+      mainAxisSpacing: 14,
+      crossAxisSpacing: 14,
+      childAspectRatio: 0.95,
+      physics: const NeverScrollableScrollPhysics(),
+      children: [
+        GridButton(
+          label: 'RUTINAS',
+          subtitle: 'Ver mis rutinas',
+          icon: Icons.fitness_center,
+          onPressed: () => Navigator.push(context,
+              MaterialPageRoute(builder: (_) => const RoutineScreen())),
+        ),
+        GridButton(
+          label: 'EJERCICIOS',
+          subtitle: 'Gestionar',
+          icon: Icons.format_list_bulleted,
+          onPressed: () => Navigator.push(context,
+              MaterialPageRoute(builder: (_) => const ExerciseScreen())),
+        ),
+        GridButton(
+          label: 'PROGRESO',
+          subtitle: 'Ver evolución',
+          icon: Icons.show_chart,
+          onPressed: () => Navigator.push(context,
+              MaterialPageRoute(builder: (_) => const ProgressScreen())),
+        ),
+        GridButton(
+          label: 'CONFIG',
+          subtitle: 'Preferencias',
+          icon: Icons.settings_outlined,
+          onPressed: () {},
+        ),
+      ],
+    );
+  }
+}
+
+class _HammerPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = AppColors.primary
+      ..style = PaintingStyle.fill;
+
+    final darkPaint = Paint()
+      ..color = AppColors.complement
+      ..style = PaintingStyle.fill;
+
+    final headRect = RRect.fromRectAndRadius(
+      Rect.fromLTWH(size.width * 0.25, size.height * 0.05,
+          size.width * 0.6, size.height * 0.38),
+      const Radius.circular(3),
+    );
+    canvas.drawRRect(headRect, paint);
+
+    final leftRect = RRect.fromRectAndRadius(
+      Rect.fromLTWH(size.width * 0.02, size.height * 0.12,
+          size.width * 0.28, size.height * 0.24),
+      const Radius.circular(2),
+    );
+    canvas.drawRRect(leftRect, paint);
+
+    final handleRect = RRect.fromRectAndRadius(
+      Rect.fromLTWH(size.width * 0.42, size.height * 0.42,
+          size.width * 0.18, size.height * 0.54),
+      const Radius.circular(2),
+    );
+    canvas.drawRRect(handleRect, darkPaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
