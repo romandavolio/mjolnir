@@ -1,19 +1,22 @@
 class Exercise {
   final String name;
   final String muscle;
-  final List<String> types;
+  final String equipment;
+  final String variant;
 
   Exercise({
     required this.name,
     this.muscle = '',
-    List<String>? types,
-  }) : types = types ?? [];
+    this.equipment = '',
+    this.variant = '',
+  });
 
   Map<String, dynamic> toJson() {
     return {
       'name': name,
       'muscle': muscle,
-      'types': types,
+      'equipment': equipment,
+      'variant': variant,
     };
   }
 
@@ -21,7 +24,8 @@ class Exercise {
     return Exercise(
       name: json['name'],
       muscle: json['muscle'] ?? '',
-      types: List<String>.from(json['types'] ?? []),
+      equipment: json['equipment'] ?? '',
+      variant: json['variant'] ?? '',
     );
   }
 }

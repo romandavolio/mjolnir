@@ -47,8 +47,8 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
   void _showSeriesForm(RoutineExercise? existing, Exercise exercise) {
     List<TextEditingController> repsControllers = existing != null
         ? existing.series
-            .map((s) => TextEditingController(text: s.reps.toString()))
-            .toList()
+              .map((s) => TextEditingController(text: s.reps.toString()))
+              .toList()
         : [TextEditingController()];
 
     showDialog(
@@ -59,18 +59,23 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
           title: Text(
             exercise.name,
             style: const TextStyle(
-                color: Colors.white, fontWeight: FontWeight.bold),
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
           ),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('SERIES',
-                    style: TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 11,
-                        letterSpacing: 1.5)),
+                const Text(
+                  'SERIES',
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 11,
+                    letterSpacing: 1.5,
+                  ),
+                ),
                 const SizedBox(height: 12),
                 ...repsControllers.asMap().entries.map((entry) {
                   final i = entry.key;
@@ -90,9 +95,10 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
                             child: Text(
                               '${i + 1}',
                               style: TextStyle(
-                                  color: AppColors.primary,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 12),
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                              ),
                             ),
                           ),
                         ),
@@ -104,23 +110,29 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
                             style: const TextStyle(color: Colors.white),
                             decoration: InputDecoration(
                               labelText: 'Repeticiones',
-                              labelStyle:
-                                  TextStyle(color: AppColors.textSecondary),
+                              labelStyle: TextStyle(
+                                color: AppColors.textSecondary,
+                              ),
                               enabledBorder: UnderlineInputBorder(
-                                borderSide:
-                                    BorderSide(color: AppColors.primary),
+                                borderSide: BorderSide(
+                                  color: AppColors.primary,
+                                ),
                               ),
                               focusedBorder: UnderlineInputBorder(
-                                borderSide:
-                                    BorderSide(color: AppColors.primary),
+                                borderSide: BorderSide(
+                                  color: AppColors.primary,
+                                ),
                               ),
                             ),
                           ),
                         ),
                         if (repsControllers.length > 1)
                           IconButton(
-                            icon: const Icon(Icons.remove_circle_outline,
-                                color: Colors.redAccent, size: 20),
+                            icon: const Icon(
+                              Icons.remove_circle_outline,
+                              color: Colors.redAccent,
+                              size: 20,
+                            ),
                             onPressed: () => setDialogState(() {
                               repsControllers.removeAt(i);
                             }),
@@ -132,15 +144,23 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
                 const SizedBox(height: 4),
                 GestureDetector(
                   onTap: () => setDialogState(
-                      () => repsControllers.add(TextEditingController())),
+                    () => repsControllers.add(TextEditingController()),
+                  ),
                   child: Row(
                     children: [
-                      Icon(Icons.add_circle_outline,
-                          color: AppColors.primary, size: 18),
+                      Icon(
+                        Icons.add_circle_outline,
+                        color: AppColors.primary,
+                        size: 18,
+                      ),
                       const SizedBox(width: 8),
-                      Text('Agregar serie',
-                          style: TextStyle(
-                              color: AppColors.primary, fontSize: 13)),
+                      Text(
+                        'Agregar serie',
+                        style: TextStyle(
+                          color: AppColors.primary,
+                          fontSize: 13,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -150,8 +170,10 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Cancelar',
-                  style: TextStyle(color: Colors.white60)),
+              child: const Text(
+                'Cancelar',
+                style: TextStyle(color: Colors.white60),
+              ),
             ),
             TextButton(
               onPressed: () async {
@@ -168,8 +190,7 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
                     existing.series = series;
                   } else {
                     widget.routine.exercises.add(
-                      RoutineExercise(
-                          exercise: exercise, series: series),
+                      RoutineExercise(exercise: exercise, series: series),
                     );
                   }
                 });
@@ -177,8 +198,10 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
                 await _save();
                 Navigator.pop(context);
               },
-              child: Text('Guardar',
-                  style: TextStyle(color: AppColors.primary)),
+              child: Text(
+                'Guardar',
+                style: TextStyle(color: AppColors.primary),
+              ),
             ),
           ],
         ),
@@ -189,19 +212,19 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
   // --- Editar peso de una serie ---
 
   void _editSerieWeight(Serie serie, String exerciseName) {
-    final controller =
-        TextEditingController(text: serie.weight.toString());
+    final controller = TextEditingController(text: serie.weight.toString());
 
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: AppColors.backgroundAppBar,
-        title: Text('${serie.reps} reps',
-            style: const TextStyle(color: Colors.white)),
+        title: Text(
+          '${serie.reps} reps',
+          style: const TextStyle(color: Colors.white),
+        ),
         content: TextField(
           controller: controller,
-          keyboardType:
-              const TextInputType.numberWithOptions(decimal: true),
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
           style: const TextStyle(color: Colors.white),
           decoration: InputDecoration(
             labelText: 'Peso ($_unit)',
@@ -214,22 +237,22 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar',
-                style: TextStyle(color: Colors.white60)),
+            child: const Text(
+              'Cancelar',
+              style: TextStyle(color: Colors.white60),
+            ),
           ),
           TextButton(
             onPressed: () async {
               final newWeight = double.tryParse(controller.text);
               if (newWeight != null) {
                 setState(() => serie.weight = newWeight);
-                await StorageService.addWeightEntry(
-                    exerciseName, newWeight);
+                await StorageService.addWeightEntry(exerciseName, newWeight);
                 await _save();
               }
               Navigator.pop(context);
             },
-            child: Text('Guardar',
-                style: TextStyle(color: AppColors.primary)),
+            child: Text('Guardar', style: TextStyle(color: AppColors.primary)),
           ),
         ],
       ),
@@ -243,8 +266,10 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: AppColors.backgroundAppBar,
-        title: const Text('Quitar ejercicio',
-            style: TextStyle(color: Colors.white)),
+        title: const Text(
+          'Quitar ejercicio',
+          style: TextStyle(color: Colors.white),
+        ),
         content: Text(
           '¿Querés quitar "${widget.routine.exercises[index].exercise.name}" de esta rutina?',
           style: const TextStyle(color: Colors.white70),
@@ -252,8 +277,10 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar',
-                style: TextStyle(color: Colors.white60)),
+            child: const Text(
+              'Cancelar',
+              style: TextStyle(color: Colors.white60),
+            ),
           ),
           TextButton(
             onPressed: () async {
@@ -261,8 +288,10 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
               await _save();
               Navigator.pop(context);
             },
-            child: const Text('Quitar',
-                style: TextStyle(color: Colors.redAccent)),
+            child: const Text(
+              'Quitar',
+              style: TextStyle(color: Colors.redAccent),
+            ),
           ),
         ],
       ),
@@ -285,12 +314,15 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('AGREGAR EJERCICIO',
-                style: TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 2)),
+            const Text(
+              'AGREGAR EJERCICIO',
+              style: TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 2,
+              ),
+            ),
             const SizedBox(height: 16),
             GestureDetector(
               onTap: () {
@@ -300,43 +332,58 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
               child: Container(
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(
-                    horizontal: 16, vertical: 14),
+                  horizontal: 16,
+                  vertical: 14,
+                ),
                 decoration: BoxDecoration(
                   color: AppColors.surface,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                      color: AppColors.primary.withValues(alpha: 0.4)),
+                    color: AppColors.primary.withValues(alpha: 0.4),
+                  ),
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.add_circle_outline,
-                        color: AppColors.primary, size: 20),
+                    Icon(
+                      Icons.add_circle_outline,
+                      color: AppColors.primary,
+                      size: 20,
+                    ),
                     const SizedBox(width: 12),
-                    const Text('Crear ejercicio nuevo',
-                        style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w600)),
+                    const Text(
+                      'Crear ejercicio nuevo',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ],
                 ),
               ),
             ),
             const SizedBox(height: 20),
-            const Text('ELEGIR DEL CATÁLOGO',
-                style: TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 2)),
+            const Text(
+              'ELEGIR DEL CATÁLOGO',
+              style: TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 2,
+              ),
+            ),
             const SizedBox(height: 12),
             Wrap(
               spacing: 8,
               runSpacing: 8,
               children: MuscleData.muscles.map((muscle) {
                 final count = _catalogExercises
-                    .where((e) =>
-                        e.muscle == muscle &&
-                        !widget.routine.exercises
-                            .any((re) => re.exercise.name == e.name))
+                    .where(
+                      (e) =>
+                          e.muscle == muscle &&
+                          !widget.routine.exercises.any(
+                            (re) => re.exercise.name == e.name,
+                          ),
+                    )
                     .length;
                 if (count == 0) return const SizedBox.shrink();
                 return GestureDetector(
@@ -346,33 +393,44 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
                   },
                   child: Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 10),
+                      horizontal: 16,
+                      vertical: 10,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.surface,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                          color: AppColors.primary.withValues(alpha: 0.25)),
+                        color: AppColors.primary.withValues(alpha: 0.25),
+                      ),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(muscle,
-                            style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w600)),
+                        Text(
+                          muscle,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                         const SizedBox(width: 8),
                         Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 6, vertical: 2),
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
                             color: AppColors.primary.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(10),
                           ),
-                          child: Text('$count',
-                              style: TextStyle(
-                                  color: AppColors.primary,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.bold)),
+                          child: Text(
+                            '$count',
+                            style: TextStyle(
+                              color: AppColors.primary,
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                         ),
                       ],
                     ),
@@ -389,10 +447,11 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
 
   void _showExerciseSelector(String muscle) {
     final exercises = _catalogExercises
-        .where((e) =>
-            e.muscle == muscle &&
-            !widget.routine.exercises
-                .any((re) => re.exercise.name == e.name))
+        .where(
+          (e) =>
+              e.muscle == muscle &&
+              !widget.routine.exercises.any((re) => re.exercise.name == e.name),
+        )
         .toList();
 
     showModalBottomSheet(
@@ -419,16 +478,22 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
                       Navigator.pop(context);
                       _showMuscleSelector();
                     },
-                    child: Icon(Icons.arrow_back_ios,
-                        color: AppColors.primary, size: 18),
+                    child: Icon(
+                      Icons.arrow_back_ios,
+                      color: AppColors.primary,
+                      size: 18,
+                    ),
                   ),
                   const SizedBox(width: 8),
-                  Text(muscle.toUpperCase(),
-                      style: const TextStyle(
-                          color: AppColors.textSecondary,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 2)),
+                  Text(
+                    muscle.toUpperCase(),
+                    style: const TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 2,
+                    ),
+                  ),
                 ],
               ),
               const SizedBox(height: 16),
@@ -446,40 +511,59 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
                       child: Container(
                         margin: const EdgeInsets.only(bottom: 8),
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 12),
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
                         decoration: BoxDecoration(
                           color: AppColors.surface,
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                              color: AppColors.primary.withValues(alpha: 0.2)),
+                            color: AppColors.primary.withValues(alpha: 0.2),
+                          ),
                         ),
                         child: Row(
                           children: [
-                            const Icon(Icons.fitness_center,
-                                color: AppColors.primary, size: 18),
+                            const Icon(
+                              Icons.fitness_center,
+                              color: AppColors.primary,
+                              size: 18,
+                            ),
                             const SizedBox(width: 12),
                             Expanded(
                               child: Column(
-                                crossAxisAlignment:
-                                    CrossAxisAlignment.start,
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(exercise.name,
-                                      style: const TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.w600)),
-                                  if (exercise.types.isNotEmpty)
+                                  Text(
+                                    exercise.name,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  if (exercise.equipment.isNotEmpty ||
+                                      exercise.variant.isNotEmpty)
                                     Text(
-                                      exercise.types.join(', '),
+                                      [
+                                        if (exercise.equipment.isNotEmpty)
+                                          exercise.equipment,
+                                        if (exercise.variant.isNotEmpty)
+                                          exercise.variant,
+                                      ].join(' · '),
                                       style: TextStyle(
-                                          color: AppColors.primary
-                                              .withValues(alpha: 0.7),
-                                          fontSize: 11),
+                                        color: AppColors.primary.withValues(
+                                          alpha: 0.7,
+                                        ),
+                                        fontSize: 11,
+                                      ),
                                     ),
                                 ],
                               ),
                             ),
-                            const Icon(Icons.add,
-                                color: AppColors.primary, size: 18),
+                            const Icon(
+                              Icons.add,
+                              color: AppColors.primary,
+                              size: 18,
+                            ),
                           ],
                         ),
                       ),
@@ -499,15 +583,18 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
   void _showNewExerciseForm() {
     final nameController = TextEditingController();
     String? selectedMuscle;
-    List<String> selectedTypes = [];
+    String? selectedEquipment;
+    String? selectedVariant;
 
     showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
           backgroundColor: AppColors.backgroundAppBar,
-          title: const Text('Nuevo ejercicio',
-              style: TextStyle(color: Colors.white)),
+          title: const Text(
+            'Nuevo ejercicio',
+            style: TextStyle(color: Colors.white),
+          ),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -528,23 +615,28 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
                   ),
                 ),
                 const SizedBox(height: 20),
-                const Text('MÚSCULO',
-                    style: TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 11,
-                        letterSpacing: 1.5)),
+                const Text(
+                  'MÚSCULO',
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 11,
+                    letterSpacing: 1.5,
+                  ),
+                ),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<String>(
                   value: selectedMuscle,
                   dropdownColor: AppColors.backgroundAppBar,
                   style: const TextStyle(color: Colors.white),
-                  hint: const Text('Seleccioná un músculo',
-                      style:
-                          TextStyle(color: AppColors.textSecondary)),
+                  hint: const Text(
+                    'Seleccioná un músculo',
+                    style: TextStyle(color: AppColors.textSecondary),
+                  ),
                   decoration: InputDecoration(
                     enabledBorder: OutlineInputBorder(
                       borderSide: BorderSide(
-                          color: AppColors.primary.withValues(alpha: 0.4)),
+                        color: AppColors.primary.withValues(alpha: 0.4),
+                      ),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     focusedBorder: OutlineInputBorder(
@@ -552,7 +644,9 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 8),
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
                   ),
                   items: MuscleData.muscles.map((m) {
                     return DropdownMenuItem(value: m, child: Text(m));
@@ -560,55 +654,59 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
                   onChanged: (value) {
                     setDialogState(() {
                       selectedMuscle = value;
-                      selectedTypes.clear();
+                      selectedEquipment = null;
+                      selectedVariant = null;
                     });
                   },
                 ),
                 if (selectedMuscle != null) ...[
                   const SizedBox(height: 20),
-                  const Text('TIPOS',
-                      style: TextStyle(
-                          color: AppColors.textSecondary,
-                          fontSize: 11,
-                          letterSpacing: 1.5)),
+                  const Text(
+                    'EQUIPAMIENTO',
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 11,
+                      letterSpacing: 1.5,
+                    ),
+                  ),
                   const SizedBox(height: 8),
                   Wrap(
                     spacing: 8,
                     runSpacing: 8,
-                    children:
-                        MuscleData.typesFor(selectedMuscle!).map((type) {
-                      final isSelected = selectedTypes.contains(type);
+                    children: MuscleData.equipmentFor(selectedMuscle!).map((
+                      item,
+                    ) {
+                      final isSelected = selectedEquipment == item;
                       return GestureDetector(
                         onTap: () => setDialogState(() {
-                          isSelected
-                              ? selectedTypes.remove(type)
-                              : selectedTypes.add(type);
+                          selectedEquipment = isSelected ? null : item;
                         }),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: isSelected
-                                ? AppColors.primary.withValues(alpha: 0.2)
-                                : AppColors.surface,
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: isSelected
-                                  ? AppColors.primary
-                                  : AppColors.primary.withValues(alpha: 0.2),
-                            ),
-                          ),
-                          child: Text(type,
-                              style: TextStyle(
-                                color: isSelected
-                                    ? AppColors.primary
-                                    : AppColors.textSecondary,
-                                fontSize: 12,
-                                fontWeight: isSelected
-                                    ? FontWeight.bold
-                                    : FontWeight.normal,
-                              )),
-                        ),
+                        child: _buildChip(item, isSelected),
+                      );
+                    }).toList(),
+                  ),
+                  const SizedBox(height: 20),
+                  const Text(
+                    'VARIANTE',
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 11,
+                      letterSpacing: 1.5,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: MuscleData.variantsFor(selectedMuscle!).map((
+                      item,
+                    ) {
+                      final isSelected = selectedVariant == item;
+                      return GestureDetector(
+                        onTap: () => setDialogState(() {
+                          selectedVariant = isSelected ? null : item;
+                        }),
+                        child: _buildChip(item, isSelected),
                       );
                     }).toList(),
                   ),
@@ -619,8 +717,10 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Cancelar',
-                  style: TextStyle(color: Colors.white60)),
+              child: const Text(
+                'Cancelar',
+                style: TextStyle(color: Colors.white60),
+              ),
             ),
             TextButton(
               onPressed: () async {
@@ -629,17 +729,45 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
                 final exercise = Exercise(
                   name: name,
                   muscle: selectedMuscle!,
-                  types: selectedTypes,
+                  equipment: selectedEquipment ?? '',
+                  variant: selectedVariant ?? '',
                 );
                 _catalogExercises.add(exercise);
                 await StorageService.saveExercises(_catalogExercises);
                 Navigator.pop(context);
                 _showSeriesForm(null, exercise);
               },
-              child: Text('Siguiente',
-                  style: TextStyle(color: AppColors.primary)),
+              child: Text(
+                'Siguiente',
+                style: TextStyle(color: AppColors.primary),
+              ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildChip(String label, bool isSelected) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: isSelected
+            ? AppColors.primary.withValues(alpha: 0.2)
+            : AppColors.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: isSelected
+              ? AppColors.primary
+              : AppColors.primary.withValues(alpha: 0.2),
+        ),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: isSelected ? AppColors.primary : AppColors.textSecondary,
+          fontSize: 12,
+          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
         ),
       ),
     );
@@ -680,50 +808,58 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
                           children: [
                             Expanded(
                               child: Column(
-                                crossAxisAlignment:
-                                    CrossAxisAlignment.start,
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(exercise.name,
-                                      style: const TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 15)),
+                                  Text(
+                                    exercise.name,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 15,
+                                    ),
+                                  ),
                                   if (exercise.muscle.isNotEmpty)
                                     Text(
-                                      exercise.muscle +
-                                          (exercise.types.isNotEmpty
-                                              ? ' · ${exercise.types.join(', ')}'
-                                              : ''),
+                                      [
+                                        if (exercise.muscle.isNotEmpty)
+                                          exercise.muscle,
+                                        if (exercise.equipment.isNotEmpty)
+                                          exercise.equipment,
+                                        if (exercise.variant.isNotEmpty)
+                                          exercise.variant,
+                                      ].join(' · '),
                                       style: TextStyle(
-                                          color: AppColors.primary
-                                              .withValues(alpha: 0.7),
-                                          fontSize: 11),
+                                        color: AppColors.primary.withValues(
+                                          alpha: 0.7,
+                                        ),
+                                        fontSize: 11,
+                                      ),
                                     ),
                                 ],
                               ),
                             ),
                             IconButton(
-                              icon: const Icon(Icons.edit_outlined,
-                                  color: AppColors.textSecondary,
-                                  size: 18),
-                              onPressed: () => _showSeriesForm(
-                                  routineExercise, exercise),
+                              icon: const Icon(
+                                Icons.edit_outlined,
+                                color: AppColors.textSecondary,
+                                size: 18,
+                              ),
+                              onPressed: () =>
+                                  _showSeriesForm(routineExercise, exercise),
                             ),
                             IconButton(
                               icon: const Icon(
-                                  Icons.remove_circle_outline,
-                                  color: Colors.redAccent,
-                                  size: 18),
+                                Icons.remove_circle_outline,
+                                color: Colors.redAccent,
+                                size: 18,
+                              ),
                               onPressed: () => _removeExercise(index),
                             ),
                           ],
                         ),
                         const SizedBox(height: 12),
                         // Lista de series
-                        ...routineExercise.series
-                            .asMap()
-                            .entries
-                            .map((entry) {
+                        ...routineExercise.series.asMap().entries.map((entry) {
                           final i = entry.key;
                           final serie = entry.value;
                           return Padding(
@@ -734,44 +870,53 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
                                   width: 28,
                                   height: 28,
                                   decoration: BoxDecoration(
-                                    color: AppColors.primary
-                                        .withValues(alpha: 0.15),
-                                    borderRadius:
-                                        BorderRadius.circular(8),
+                                    color: AppColors.primary.withValues(
+                                      alpha: 0.15,
+                                    ),
+                                    borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Center(
-                                    child: Text('${i + 1}',
-                                        style: TextStyle(
-                                            color: AppColors.primary,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 12)),
+                                    child: Text(
+                                      '${i + 1}',
+                                      style: TextStyle(
+                                        color: AppColors.primary,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 12,
+                                      ),
+                                    ),
                                   ),
                                 ),
                                 const SizedBox(width: 12),
-                                Text('${serie.reps} reps',
-                                    style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 14)),
+                                Text(
+                                  '${serie.reps} reps',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 14,
+                                  ),
+                                ),
                                 const Spacer(),
                                 GestureDetector(
-                                  onTap: () => _editSerieWeight(
-                                      serie, exercise.name),
+                                  onTap: () =>
+                                      _editSerieWeight(serie, exercise.name),
                                   child: Container(
                                     padding: const EdgeInsets.symmetric(
-                                        horizontal: 12, vertical: 6),
+                                      horizontal: 12,
+                                      vertical: 6,
+                                    ),
                                     decoration: BoxDecoration(
                                       border: Border.all(
-                                          color: AppColors.primary),
-                                      borderRadius:
-                                          BorderRadius.circular(8),
+                                        color: AppColors.primary,
+                                      ),
+                                      borderRadius: BorderRadius.circular(8),
                                     ),
                                     child: Text(
                                       serie.weight == 0
                                           ? '— $_unit'
                                           : '${serie.weight} $_unit',
                                       style: TextStyle(
-                                          color: AppColors.primary,
-                                          fontWeight: FontWeight.bold),
+                                        color: AppColors.primary,
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                     ),
                                   ),
                                 ),
