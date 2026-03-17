@@ -1,33 +1,79 @@
 import 'package:flutter/material.dart';
 import 'package:mjolnir/components/grid_button.dart';
 import 'package:mjolnir/core/app_colors.dart';
+import 'package:mjolnir/models/user_profile.dart';
+import 'package:mjolnir/screens/auth/login_screen.dart';
+import 'package:mjolnir/screens/config_screen.dart';
 import 'package:mjolnir/screens/exercise_screen.dart';
 import 'package:mjolnir/screens/progress_screen.dart';
 import 'package:mjolnir/screens/routine_screen.dart';
-import 'package:mjolnir/screens/config_screen.dart';
+import 'package:mjolnir/services/auth_service.dart';
+import 'package:mjolnir/services/user_service.dart';
+import 'package:mjolnir/screens/students_screen.dart';
+import 'package:mjolnir/screens/notifications_screen.dart';
 
-class WelcomeScreen extends StatelessWidget {
+class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({super.key});
+
+  @override
+  State<WelcomeScreen> createState() => _WelcomeScreenState();
+}
+
+class _WelcomeScreenState extends State<WelcomeScreen> {
+  UserProfile? _profile;
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
+
+  Future<void> _loadProfile() async {
+    final profile = await UserService.getCurrentProfile();
+    setState(() {
+      _profile = profile;
+      _loading = false;
+    });
+  }
+
+  Future<void> _logout() async {
+    await AuthService.logout();
+    if (mounted) {
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
+        (_) => false,
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildHeader(),
-              const SizedBox(height: 8),
-              _buildDivider(),
-              const SizedBox(height: 28),
-              Expanded(child: _buildGrid(context)),
-            ],
-          ),
-        ),
-      ),
+      body: _loading
+          ? const Center(
+              child: CircularProgressIndicator(color: AppColors.primary),
+            )
+          : SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 20,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildHeader(),
+                    const SizedBox(height: 8),
+                    _buildDivider(),
+                    const SizedBox(height: 28),
+                    Expanded(child: _buildGrid()),
+                  ],
+                ),
+              ),
+            ),
     );
   }
 
@@ -52,14 +98,54 @@ class WelcomeScreen extends StatelessWidget {
                 letterSpacing: 6,
               ),
             ),
+            const Spacer(),
+            // Nombre y logout
+            if (_profile != null)
+              Row(
+                children: [
+                  Text(
+                    _profile!.name.split(' ').first,
+                    style: const TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 13,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  if (_profile!.role == 'alumno')
+                    GestureDetector(
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const NotificationsScreen(),
+                        ),
+                      ),
+                      child: const Icon(
+                        Icons.notifications_outlined,
+                        color: AppColors.textSecondary,
+                        size: 20,
+                      ),
+                    ),
+                  const SizedBox(width: 8),
+                  GestureDetector(
+                    onTap: _logout,
+                    child: const Icon(
+                      Icons.logout,
+                      color: AppColors.textSecondary,
+                      size: 20,
+                    ),
+                  ),
+                ],
+              ),
           ],
         ),
         const SizedBox(height: 4),
-        const Padding(
-          padding: EdgeInsets.only(left: 44),
+        Padding(
+          padding: const EdgeInsets.only(left: 44),
           child: Text(
-            'TU ENTRENAMIENTO, TU PROGRESO',
-            style: TextStyle(
+            _profile?.role.toUpperCase() == 'TRAINER'
+                ? 'PANEL DE TRAINER'
+                : 'TU ENTRENAMIENTO, TU PROGRESO',
+            style: const TextStyle(
               color: AppColors.textSecondary,
               fontSize: 10,
               fontWeight: FontWeight.w600,
@@ -76,47 +162,57 @@ class WelcomeScreen extends StatelessWidget {
       height: 1,
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [AppColors.primary.withValues(alpha: 0.6), Colors.transparent],
+          colors: [
+            AppColors.primary.withValues(alpha: 0.6),
+            Colors.transparent,
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildGrid(BuildContext context) {
-    return GridView.count(
-      crossAxisCount: 2,
-      mainAxisSpacing: 14,
-      crossAxisSpacing: 14,
-      childAspectRatio: 0.95,
-      physics: const NeverScrollableScrollPhysics(),
-      children: [
-        GridButton(
-          label: 'RUTINAS',
-          subtitle: 'Ver mis rutinas',
-          icon: Icons.fitness_center,
-          onPressed: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const RoutineScreen()),
-          ),
+  Widget _buildGrid() {
+    final isTrainer = _profile?.role == 'trainer';
+
+    final buttons = [
+      GridButton(
+        label: 'RUTINAS',
+        subtitle: isTrainer ? 'Gestionar rutinas' : 'Ver mis rutinas',
+        icon: Icons.fitness_center,
+        onPressed: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const RoutineScreen()),
         ),
+      ),
+      GridButton(
+        label: 'EJERCICIOS',
+        subtitle: 'Catálogo',
+        icon: Icons.format_list_bulleted,
+        onPressed: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const ExerciseScreen()),
+        ),
+      ),
+      GridButton(
+        label: 'PROGRESO',
+        subtitle: 'Ver evolución',
+        icon: Icons.show_chart,
+        onPressed: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const ProgressScreen()),
+        ),
+      ),
+      if (isTrainer)
         GridButton(
-          label: 'EJERCICIOS',
+          label: 'ALUMNOS',
           subtitle: 'Gestionar',
-          icon: Icons.format_list_bulleted,
+          icon: Icons.people_outline,
           onPressed: () => Navigator.push(
             context,
-            MaterialPageRoute(builder: (_) => const ExerciseScreen()),
+            MaterialPageRoute(builder: (_) => const StudentsScreen()),
           ),
-        ),
-        GridButton(
-          label: 'PROGRESO',
-          subtitle: 'Ver evolución',
-          icon: Icons.show_chart,
-          onPressed: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const ProgressScreen()),
-          ),
-        ),
+        )
+      else
         GridButton(
           label: 'CONFIG',
           subtitle: 'Preferencias',
@@ -126,7 +222,15 @@ class WelcomeScreen extends StatelessWidget {
             MaterialPageRoute(builder: (_) => const ConfigScreen()),
           ),
         ),
-      ],
+    ];
+
+    return GridView.count(
+      crossAxisCount: 2,
+      mainAxisSpacing: 14,
+      crossAxisSpacing: 14,
+      childAspectRatio: 0.95,
+      physics: const NeverScrollableScrollPhysics(),
+      children: buttons,
     );
   }
 }

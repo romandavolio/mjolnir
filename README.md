@@ -30,7 +30,10 @@ Permite gestionar ejercicios, rutinas y registrar el progreso de peso a lo largo
 
 ## Capturas
 
+![Pantalla de login](login_screen.png)
+![Pantalla de inicio](welcome_screen.png)
 ![Pantalla de rutinas](routine_screen.png)
+![Pantalla de detalles de rutinas](routine_detail_screen.png)
 
 ## Cómo correrlo
 
