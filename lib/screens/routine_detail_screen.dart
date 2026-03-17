@@ -3,6 +3,8 @@ import 'package:mjolnir/core/app_colors.dart';
 import 'package:mjolnir/core/muscle_data.dart';
 import 'package:mjolnir/models/exercise.dart';
 import 'package:mjolnir/models/routine.dart';
+import 'package:mjolnir/models/routine_exercise.dart';
+import 'package:mjolnir/models/serie.dart';
 import 'package:mjolnir/services/storage_service.dart';
 
 class RoutineDetailScreen extends StatefulWidget {
@@ -32,10 +34,6 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
   Future<void> _loadData() async {
     final unit = await StorageService.loadUnit();
     final catalog = await StorageService.loadExercises();
-    for (final exercise in widget.routine.exercises) {
-      final saved = await StorageService.loadWeight(exercise.name);
-      if (saved != null) exercise.weight = saved;
-    }
     setState(() {
       _unit = unit;
       _catalogExercises = catalog;
@@ -44,7 +42,234 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
 
   Future<void> _save() async => await widget.onSave();
 
-  // --- Flujo de selección desde catálogo ---
+  // --- Formulario de series ---
+
+  void _showSeriesForm(RoutineExercise? existing, Exercise exercise) {
+    List<TextEditingController> repsControllers = existing != null
+        ? existing.series
+            .map((s) => TextEditingController(text: s.reps.toString()))
+            .toList()
+        : [TextEditingController()];
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          backgroundColor: AppColors.backgroundAppBar,
+          title: Text(
+            exercise.name,
+            style: const TextStyle(
+                color: Colors.white, fontWeight: FontWeight.bold),
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('SERIES',
+                    style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 11,
+                        letterSpacing: 1.5)),
+                const SizedBox(height: 12),
+                ...repsControllers.asMap().entries.map((entry) {
+                  final i = entry.key;
+                  final controller = entry.value;
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 28,
+                          height: 28,
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Center(
+                            child: Text(
+                              '${i + 1}',
+                              style: TextStyle(
+                                  color: AppColors.primary,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: TextField(
+                            controller: controller,
+                            keyboardType: TextInputType.number,
+                            style: const TextStyle(color: Colors.white),
+                            decoration: InputDecoration(
+                              labelText: 'Repeticiones',
+                              labelStyle:
+                                  TextStyle(color: AppColors.textSecondary),
+                              enabledBorder: UnderlineInputBorder(
+                                borderSide:
+                                    BorderSide(color: AppColors.primary),
+                              ),
+                              focusedBorder: UnderlineInputBorder(
+                                borderSide:
+                                    BorderSide(color: AppColors.primary),
+                              ),
+                            ),
+                          ),
+                        ),
+                        if (repsControllers.length > 1)
+                          IconButton(
+                            icon: const Icon(Icons.remove_circle_outline,
+                                color: Colors.redAccent, size: 20),
+                            onPressed: () => setDialogState(() {
+                              repsControllers.removeAt(i);
+                            }),
+                          ),
+                      ],
+                    ),
+                  );
+                }),
+                const SizedBox(height: 4),
+                GestureDetector(
+                  onTap: () => setDialogState(
+                      () => repsControllers.add(TextEditingController())),
+                  child: Row(
+                    children: [
+                      Icon(Icons.add_circle_outline,
+                          color: AppColors.primary, size: 18),
+                      const SizedBox(width: 8),
+                      Text('Agregar serie',
+                          style: TextStyle(
+                              color: AppColors.primary, fontSize: 13)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancelar',
+                  style: TextStyle(color: Colors.white60)),
+            ),
+            TextButton(
+              onPressed: () async {
+                final series = repsControllers
+                    .map((c) => int.tryParse(c.text))
+                    .where((r) => r != null && r > 0)
+                    .map((r) => Serie(reps: r!))
+                    .toList();
+
+                if (series.isEmpty) return;
+
+                setState(() {
+                  if (existing != null) {
+                    existing.series = series;
+                  } else {
+                    widget.routine.exercises.add(
+                      RoutineExercise(
+                          exercise: exercise, series: series),
+                    );
+                  }
+                });
+
+                await _save();
+                Navigator.pop(context);
+              },
+              child: Text('Guardar',
+                  style: TextStyle(color: AppColors.primary)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // --- Editar peso de una serie ---
+
+  void _editSerieWeight(Serie serie, String exerciseName) {
+    final controller =
+        TextEditingController(text: serie.weight.toString());
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.backgroundAppBar,
+        title: Text('${serie.reps} reps',
+            style: const TextStyle(color: Colors.white)),
+        content: TextField(
+          controller: controller,
+          keyboardType:
+              const TextInputType.numberWithOptions(decimal: true),
+          style: const TextStyle(color: Colors.white),
+          decoration: InputDecoration(
+            labelText: 'Peso ($_unit)',
+            labelStyle: TextStyle(color: AppColors.primary),
+            enabledBorder: UnderlineInputBorder(
+              borderSide: BorderSide(color: AppColors.primary),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar',
+                style: TextStyle(color: Colors.white60)),
+          ),
+          TextButton(
+            onPressed: () async {
+              final newWeight = double.tryParse(controller.text);
+              if (newWeight != null) {
+                setState(() => serie.weight = newWeight);
+                await StorageService.addWeightEntry(
+                    exerciseName, newWeight);
+                await _save();
+              }
+              Navigator.pop(context);
+            },
+            child: Text('Guardar',
+                style: TextStyle(color: AppColors.primary)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // --- Quitar ejercicio de rutina ---
+
+  void _removeExercise(int index) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.backgroundAppBar,
+        title: const Text('Quitar ejercicio',
+            style: TextStyle(color: Colors.white)),
+        content: Text(
+          '¿Querés quitar "${widget.routine.exercises[index].exercise.name}" de esta rutina?',
+          style: const TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar',
+                style: TextStyle(color: Colors.white60)),
+          ),
+          TextButton(
+            onPressed: () async {
+              setState(() => widget.routine.exercises.removeAt(index));
+              await _save();
+              Navigator.pop(context);
+            },
+            child: const Text('Quitar',
+                style: TextStyle(color: Colors.redAccent)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // --- Selector de músculo → tipo → ejercicio ---
 
   void _showMuscleSelector() {
     showModalBottomSheet(
@@ -80,7 +305,7 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
                   color: AppColors.surface,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                      color: AppColors.primary.withOpacity(0.4)),
+                      color: AppColors.primary.withValues(alpha: 0.4)),
                 ),
                 child: Row(
                   children: [
@@ -111,13 +336,13 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
                     .where((e) =>
                         e.muscle == muscle &&
                         !widget.routine.exercises
-                            .any((re) => re.name == e.name))
+                            .any((re) => re.exercise.name == e.name))
                     .length;
                 if (count == 0) return const SizedBox.shrink();
                 return GestureDetector(
                   onTap: () {
                     Navigator.pop(context);
-                    _showTypeSelector(muscle);
+                    _showExerciseSelector(muscle);
                   },
                   child: Container(
                     padding: const EdgeInsets.symmetric(
@@ -126,7 +351,7 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
                       color: AppColors.surface,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                          color: AppColors.primary.withOpacity(0.25)),
+                          color: AppColors.primary.withValues(alpha: 0.25)),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -140,7 +365,7 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
-                            color: AppColors.primary.withOpacity(0.15),
+                            color: AppColors.primary.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: Text('$count',
@@ -162,12 +387,12 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
     );
   }
 
-  void _showTypeSelector(String muscle) {
-    final types = MuscleData.typesFor(muscle);
-    final exercisesForMuscle = _catalogExercises
+  void _showExerciseSelector(String muscle) {
+    final exercises = _catalogExercises
         .where((e) =>
             e.muscle == muscle &&
-            !widget.routine.exercises.any((re) => re.name == e.name))
+            !widget.routine.exercises
+                .any((re) => re.exercise.name == e.name))
         .toList();
 
     showModalBottomSheet(
@@ -207,32 +432,58 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
                 ],
               ),
               const SizedBox(height: 16),
-              // Chips de tipo
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  _buildTypeChip('Todos', null, muscle,
-                      exercisesForMuscle, scrollController),
-                  ...types.map((type) {
-                    final count = exercisesForMuscle
-                        .where((e) => e.types.contains(type))
-                        .length;
-                    if (count == 0) return const SizedBox.shrink();
-                    return _buildTypeChip(type, type, muscle,
-                        exercisesForMuscle, scrollController);
-                  }),
-                ],
-              ),
-              const SizedBox(height: 16),
               Expanded(
-                child: _ExerciseList(
-                  exercises: exercisesForMuscle,
-                  onSelect: (exercise) async {
-                    setState(() =>
-                        widget.routine.exercises.add(exercise));
-                    await _save();
-                    Navigator.pop(context);
+                child: ListView.builder(
+                  controller: scrollController,
+                  itemCount: exercises.length,
+                  itemBuilder: (context, index) {
+                    final exercise = exercises[index];
+                    return GestureDetector(
+                      onTap: () {
+                        Navigator.pop(context);
+                        _showSeriesForm(null, exercise);
+                      },
+                      child: Container(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: AppColors.surface,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                              color: AppColors.primary.withValues(alpha: 0.2)),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.fitness_center,
+                                color: AppColors.primary, size: 18),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment:
+                                    CrossAxisAlignment.start,
+                                children: [
+                                  Text(exercise.name,
+                                      style: const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w600)),
+                                  if (exercise.types.isNotEmpty)
+                                    Text(
+                                      exercise.types.join(', '),
+                                      style: TextStyle(
+                                          color: AppColors.primary
+                                              .withValues(alpha: 0.7),
+                                          fontSize: 11),
+                                    ),
+                                ],
+                              ),
+                            ),
+                            const Icon(Icons.add,
+                                color: AppColors.primary, size: 18),
+                          ],
+                        ),
+                      ),
+                    );
                   },
                 ),
               ),
@@ -243,34 +494,10 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
     );
   }
 
-  Widget _buildTypeChip(
-    String label,
-    String? type,
-    String muscle,
-    List<Exercise> exercises,
-    ScrollController scrollController,
-  ) {
-    return GestureDetector(
-      onTap: () {},
-      child: _TypeFilterChip(
-        label: label,
-        type: type,
-        exercises: exercises,
-        onSelect: (exercise) async {
-          setState(() => widget.routine.exercises.add(exercise));
-          await _save();
-          Navigator.pop(context);
-        },
-      ),
-    );
-  }
-
-  // --- Crear ejercicio nuevo ---
+  // --- Crear ejercicio nuevo desde rutina ---
 
   void _showNewExerciseForm() {
     final nameController = TextEditingController();
-    final setsController = TextEditingController();
-    final repsController = TextEditingController();
     String? selectedMuscle;
     List<String> selectedTypes = [];
 
@@ -286,13 +513,20 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildField(nameController, 'Nombre'),
-                const SizedBox(height: 12),
-                _buildField(setsController, 'Series',
-                    isNumber: true),
-                const SizedBox(height: 12),
-                _buildField(repsController, 'Repeticiones',
-                    isNumber: true),
+                TextField(
+                  controller: nameController,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: InputDecoration(
+                    labelText: 'Nombre',
+                    labelStyle: TextStyle(color: AppColors.primary),
+                    enabledBorder: UnderlineInputBorder(
+                      borderSide: BorderSide(color: AppColors.primary),
+                    ),
+                    focusedBorder: UnderlineInputBorder(
+                      borderSide: BorderSide(color: AppColors.primary),
+                    ),
+                  ),
+                ),
                 const SizedBox(height: 20),
                 const Text('MÚSCULO',
                     style: TextStyle(
@@ -305,25 +539,23 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
                   dropdownColor: AppColors.backgroundAppBar,
                   style: const TextStyle(color: Colors.white),
                   hint: const Text('Seleccioná un músculo',
-                      style: TextStyle(
-                          color: AppColors.textSecondary)),
+                      style:
+                          TextStyle(color: AppColors.textSecondary)),
                   decoration: InputDecoration(
                     enabledBorder: OutlineInputBorder(
                       borderSide: BorderSide(
-                          color: AppColors.primary.withOpacity(0.4)),
+                          color: AppColors.primary.withValues(alpha: 0.4)),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     focusedBorder: OutlineInputBorder(
-                      borderSide:
-                          BorderSide(color: AppColors.primary),
+                      borderSide: BorderSide(color: AppColors.primary),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     contentPadding: const EdgeInsets.symmetric(
                         horizontal: 12, vertical: 8),
                   ),
                   items: MuscleData.muscles.map((m) {
-                    return DropdownMenuItem(
-                        value: m, child: Text(m));
+                    return DropdownMenuItem(value: m, child: Text(m));
                   }).toList(),
                   onChanged: (value) {
                     setDialogState(() {
@@ -357,13 +589,13 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
                               horizontal: 12, vertical: 6),
                           decoration: BoxDecoration(
                             color: isSelected
-                                ? AppColors.primary.withOpacity(0.2)
+                                ? AppColors.primary.withValues(alpha: 0.2)
                                 : AppColors.surface,
                             borderRadius: BorderRadius.circular(20),
                             border: Border.all(
                               color: isSelected
                                   ? AppColors.primary
-                                  : AppColors.primary.withOpacity(0.2),
+                                  : AppColors.primary.withValues(alpha: 0.2),
                             ),
                           ),
                           child: Text(type,
@@ -393,133 +625,22 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
             TextButton(
               onPressed: () async {
                 final name = nameController.text.trim();
-                final sets = int.tryParse(setsController.text);
-                final reps = int.tryParse(repsController.text);
-                if (name.isEmpty ||
-                    sets == null ||
-                    reps == null ||
-                    selectedMuscle == null) return;
-
+                if (name.isEmpty || selectedMuscle == null) return;
                 final exercise = Exercise(
                   name: name,
-                  sets: sets,
-                  reps: reps,
                   muscle: selectedMuscle!,
                   types: selectedTypes,
                 );
-
-                setState(() => widget.routine.exercises.add(exercise));
                 _catalogExercises.add(exercise);
                 await StorageService.saveExercises(_catalogExercises);
-                await _save();
                 Navigator.pop(context);
+                _showSeriesForm(null, exercise);
               },
-              child: Text('Guardar',
+              child: Text('Siguiente',
                   style: TextStyle(color: AppColors.primary)),
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildField(TextEditingController controller, String label,
-      {bool isNumber = false}) {
-    return TextField(
-      controller: controller,
-      keyboardType:
-          isNumber ? TextInputType.number : TextInputType.text,
-      style: const TextStyle(color: Colors.white),
-      decoration: InputDecoration(
-        labelText: label,
-        labelStyle: TextStyle(color: AppColors.primary),
-        enabledBorder: UnderlineInputBorder(
-          borderSide: BorderSide(color: AppColors.primary),
-        ),
-        focusedBorder: UnderlineInputBorder(
-          borderSide: BorderSide(color: AppColors.primary),
-        ),
-      ),
-    );
-  }
-
-  // --- Editar peso ---
-
-  void _editWeight(Exercise exercise) {
-    final controller =
-        TextEditingController(text: exercise.weight.toString());
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppColors.backgroundAppBar,
-        title: Text(exercise.name,
-            style: const TextStyle(color: Colors.white)),
-        content: TextField(
-          controller: controller,
-          keyboardType:
-              const TextInputType.numberWithOptions(decimal: true),
-          style: const TextStyle(color: Colors.white),
-          decoration: InputDecoration(
-            labelText: 'Peso ($_unit)',
-            labelStyle: TextStyle(color: AppColors.primary),
-            enabledBorder: UnderlineInputBorder(
-              borderSide: BorderSide(color: AppColors.primary),
-            ),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar',
-                style: TextStyle(color: Colors.white60)),
-          ),
-          TextButton(
-            onPressed: () async {
-              final newWeight = double.tryParse(controller.text);
-              if (newWeight != null) {
-                await StorageService.saveWeight(
-                    exercise.name, newWeight);
-                setState(() => exercise.weight = newWeight);
-              }
-              Navigator.pop(context);
-            },
-            child: Text('Guardar',
-                style: TextStyle(color: AppColors.primary)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // --- Quitar ejercicio de rutina ---
-
-  void _removeExercise(int index) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppColors.backgroundAppBar,
-        title: const Text('Quitar ejercicio',
-            style: TextStyle(color: Colors.white)),
-        content: Text(
-          '¿Querés quitar "${widget.routine.exercises[index].name}" de esta rutina?',
-          style: const TextStyle(color: Colors.white70),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar',
-                style: TextStyle(color: Colors.white60)),
-          ),
-          TextButton(
-            onPressed: () async {
-              setState(() => widget.routine.exercises.removeAt(index));
-              await _save();
-              Navigator.pop(context);
-            },
-            child: const Text('Quitar',
-                style: TextStyle(color: Colors.redAccent)),
-          ),
-        ],
       ),
     );
   }
@@ -545,64 +666,119 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
               padding: const EdgeInsets.all(16),
               itemCount: widget.routine.exercises.length,
               itemBuilder: (context, index) {
-                final exercise = widget.routine.exercises[index];
+                final routineExercise = widget.routine.exercises[index];
+                final exercise = routineExercise.exercise;
                 return Card(
                   color: AppColors.backgroundAppBar,
-                  margin: const EdgeInsets.only(bottom: 12),
-                  child: ListTile(
-                    title: Text(exercise.name,
-                        style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold)),
-                    subtitle: Column(
+                  margin: const EdgeInsets.only(bottom: 16),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          '${exercise.sets} series x ${exercise.reps} reps',
-                          style: const TextStyle(
-                              color: AppColors.textSecondary),
-                        ),
-                        if (exercise.muscle.isNotEmpty)
-                          Text(
-                            exercise.muscle +
-                                (exercise.types.isNotEmpty
-                                    ? ' · ${exercise.types.join(', ')}'
-                                    : ''),
-                            style: TextStyle(
-                              color: AppColors.primary.withOpacity(0.7),
-                              fontSize: 11,
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment:
+                                    CrossAxisAlignment.start,
+                                children: [
+                                  Text(exercise.name,
+                                      style: const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 15)),
+                                  if (exercise.muscle.isNotEmpty)
+                                    Text(
+                                      exercise.muscle +
+                                          (exercise.types.isNotEmpty
+                                              ? ' · ${exercise.types.join(', ')}'
+                                              : ''),
+                                      style: TextStyle(
+                                          color: AppColors.primary
+                                              .withValues(alpha: 0.7),
+                                          fontSize: 11),
+                                    ),
+                                ],
+                              ),
                             ),
-                          ),
-                      ],
-                    ),
-                    isThreeLine: exercise.muscle.isNotEmpty,
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        GestureDetector(
-                          onTap: () => _editWeight(exercise),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 10, vertical: 6),
-                            decoration: BoxDecoration(
-                              border:
-                                  Border.all(color: AppColors.primary),
-                              borderRadius: BorderRadius.circular(8),
+                            IconButton(
+                              icon: const Icon(Icons.edit_outlined,
+                                  color: AppColors.textSecondary,
+                                  size: 18),
+                              onPressed: () => _showSeriesForm(
+                                  routineExercise, exercise),
                             ),
-                            child: Text(
-                              '${exercise.weight} $_unit',
-                              style: TextStyle(
-                                  color: AppColors.primary,
-                                  fontWeight: FontWeight.bold),
+                            IconButton(
+                              icon: const Icon(
+                                  Icons.remove_circle_outline,
+                                  color: Colors.redAccent,
+                                  size: 18),
+                              onPressed: () => _removeExercise(index),
                             ),
-                          ),
+                          ],
                         ),
-                        const SizedBox(width: 4),
-                        IconButton(
-                          icon: const Icon(Icons.remove_circle_outline,
-                              color: Colors.redAccent, size: 20),
-                          onPressed: () => _removeExercise(index),
-                        ),
+                        const SizedBox(height: 12),
+                        // Lista de series
+                        ...routineExercise.series
+                            .asMap()
+                            .entries
+                            .map((entry) {
+                          final i = entry.key;
+                          final serie = entry.value;
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 28,
+                                  height: 28,
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primary
+                                        .withValues(alpha: 0.15),
+                                    borderRadius:
+                                        BorderRadius.circular(8),
+                                  ),
+                                  child: Center(
+                                    child: Text('${i + 1}',
+                                        style: TextStyle(
+                                            color: AppColors.primary,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 12)),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Text('${serie.reps} reps',
+                                    style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 14)),
+                                const Spacer(),
+                                GestureDetector(
+                                  onTap: () => _editSerieWeight(
+                                      serie, exercise.name),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 12, vertical: 6),
+                                    decoration: BoxDecoration(
+                                      border: Border.all(
+                                          color: AppColors.primary),
+                                      borderRadius:
+                                          BorderRadius.circular(8),
+                                    ),
+                                    child: Text(
+                                      serie.weight == 0
+                                          ? '— $_unit'
+                                          : '${serie.weight} $_unit',
+                                      style: TextStyle(
+                                          color: AppColors.primary,
+                                          fontWeight: FontWeight.bold),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }),
                       ],
                     ),
                   ),
@@ -613,196 +789,6 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
         backgroundColor: AppColors.primary,
         onPressed: _showMuscleSelector,
         child: const Icon(Icons.add, color: Colors.black),
-      ),
-    );
-  }
-}
-
-// Widget separado para la lista con filtro por tipo
-class _TypeFilterChip extends StatefulWidget {
-  final String label;
-  final String? type;
-  final List<Exercise> exercises;
-  final Future<void> Function(Exercise) onSelect;
-
-  const _TypeFilterChip({
-    required this.label,
-    required this.type,
-    required this.exercises,
-    required this.onSelect,
-  });
-
-  @override
-  State<_TypeFilterChip> createState() => _TypeFilterChipState();
-}
-
-class _TypeFilterChipState extends State<_TypeFilterChip> {
-  bool _selected = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _selected = widget.type == null;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () => setState(() => _selected = true),
-      child: Container(
-        padding:
-            const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-        decoration: BoxDecoration(
-          color: _selected
-              ? AppColors.primary.withOpacity(0.2)
-              : AppColors.surface,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: _selected
-                ? AppColors.primary
-                : AppColors.primary.withOpacity(0.2),
-          ),
-        ),
-        child: Text(
-          widget.label,
-          style: TextStyle(
-            color: _selected ? AppColors.primary : AppColors.textSecondary,
-            fontSize: 12,
-            fontWeight:
-                _selected ? FontWeight.bold : FontWeight.normal,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// Lista de ejercicios con filtro por tipo activo
-class _ExerciseList extends StatefulWidget {
-  final List<Exercise> exercises;
-  final Future<void> Function(Exercise) onSelect;
-
-  const _ExerciseList({
-    required this.exercises,
-    required this.onSelect,
-  });
-
-  @override
-  State<_ExerciseList> createState() => _ExerciseListState();
-}
-
-class _ExerciseListState extends State<_ExerciseList> {
-  String? _activeType;
-
-  List<Exercise> get _filtered {
-    if (_activeType == null) return widget.exercises;
-    return widget.exercises
-        .where((e) => e.types.contains(_activeType))
-        .toList();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final allTypes = widget.exercises
-        .expand((e) => e.types)
-        .toSet()
-        .toList();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (allTypes.isNotEmpty)
-          SizedBox(
-            height: 36,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              children: [
-                _chip('Todos', null),
-                ...allTypes.map((t) => _chip(t, t)),
-              ],
-            ),
-          ),
-        const SizedBox(height: 12),
-        Expanded(
-          child: ListView.builder(
-            itemCount: _filtered.length,
-            itemBuilder: (context, index) {
-              final exercise = _filtered[index];
-              return GestureDetector(
-                onTap: () => widget.onSelect(exercise),
-                child: Container(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 12),
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                        color: AppColors.primary.withOpacity(0.2)),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.fitness_center,
-                          color: AppColors.primary, size: 18),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(exercise.name,
-                                style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w600)),
-                            Text(
-                              '${exercise.sets} series x ${exercise.reps} reps',
-                              style: const TextStyle(
-                                  color: AppColors.textSecondary,
-                                  fontSize: 12),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const Icon(Icons.add,
-                          color: AppColors.primary, size: 18),
-                    ],
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _chip(String label, String? type) {
-    final isSelected = _activeType == type;
-    return GestureDetector(
-      onTap: () => setState(() => _activeType = type),
-      child: Container(
-        margin: const EdgeInsets.only(right: 8),
-        padding:
-            const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? AppColors.primary.withOpacity(0.2)
-              : AppColors.surface,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isSelected
-                ? AppColors.primary
-                : AppColors.primary.withOpacity(0.2),
-          ),
-        ),
-        child: Text(label,
-            style: TextStyle(
-              color: isSelected
-                  ? AppColors.primary
-                  : AppColors.textSecondary,
-              fontSize: 12,
-              fontWeight:
-                  isSelected ? FontWeight.bold : FontWeight.normal,
-            )),
       ),
     );
   }

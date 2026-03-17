@@ -37,7 +37,7 @@ class _GridButtonState extends State<GridButton> {
           border: Border.all(
             color: _pressed
                 ? AppColors.primary
-                : AppColors.primary.withOpacity(0.25),
+                : AppColors.primary.withValues(alpha: 0.25),
             width: 1.5,
           ),
         ),
@@ -50,10 +50,10 @@ class _GridButtonState extends State<GridButton> {
                 width: 52,
                 height: 52,
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.1),
+                  color: AppColors.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: AppColors.primary.withOpacity(0.3),
+                    color: AppColors.primary.withValues(alpha: 0.3),
                     width: 1,
                   ),
                 ),

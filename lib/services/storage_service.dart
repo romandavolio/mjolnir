@@ -6,19 +6,6 @@ import 'package:mjolnir/models/weight_entry.dart';
 
 class StorageService {
 
-  // --- Pesos de ejercicios ---
-
-  static Future<void> saveWeight(String exerciseName, double weight) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setDouble('weight_$exerciseName', weight);
-    await addWeightEntry(exerciseName, weight);
-  }
-
-  static Future<double?> loadWeight(String exerciseName) async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getDouble('weight_$exerciseName');
-  }
-
   // --- Catálogo global de ejercicios ---
 
   static Future<void> saveExercises(List<Exercise> exercises) async {
@@ -51,9 +38,10 @@ class StorageService {
     return jsonList.map((r) => Routine.fromJson(r)).toList();
   }
 
-  // --- Historial de pesos ---
+  // --- Historial de pesos por ejercicio ---
 
-  static Future<void> addWeightEntry(String exerciseName, double weight) async {
+  static Future<void> addWeightEntry(
+      String exerciseName, double weight) async {
     final prefs = await SharedPreferences.getInstance();
     final key = 'history_$exerciseName';
     final jsonString = prefs.getString(key);

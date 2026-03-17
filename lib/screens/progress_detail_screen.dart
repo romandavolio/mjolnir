@@ -61,7 +61,7 @@ class _ProgressDetailScreenState extends State<ProgressDetailScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '${widget.exercise.sets} series x ${widget.exercise.reps} reps',
+              widget.exercise.muscle.isNotEmpty ? widget.exercise.muscle : 'Sin músculo asignado',
               style: const TextStyle(
                   color: AppColors.textSecondary, fontSize: 13),
             ),
@@ -145,7 +145,7 @@ class _ProgressDetailScreenState extends State<ProgressDetailScreen> {
                         ),
                         belowBarData: BarAreaData(
                           show: true,
-                          color: AppColors.primary.withOpacity(0.15),
+                          color: AppColors.primary.withValues(alpha: 0.15),
                         ),
                       ),
                     ],

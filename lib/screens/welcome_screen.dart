@@ -76,7 +76,7 @@ class WelcomeScreen extends StatelessWidget {
       height: 1,
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [AppColors.primary.withOpacity(0.6), Colors.transparent],
+          colors: [AppColors.primary.withValues(alpha: 0.6), Colors.transparent],
         ),
       ),
     );

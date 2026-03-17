@@ -36,13 +36,8 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
   void _showExerciseForm({Exercise? existing, int? index}) {
     final nameController =
         TextEditingController(text: existing?.name ?? '');
-    final setsController =
-        TextEditingController(text: existing?.sets.toString() ?? '');
-    final repsController =
-        TextEditingController(text: existing?.reps.toString() ?? '');
-    String? selectedMuscle = existing?.muscle.isNotEmpty == true
-        ? existing!.muscle
-        : null;
+    String? selectedMuscle =
+        existing?.muscle.isNotEmpty == true ? existing!.muscle : null;
     List<String> selectedTypes = List.from(existing?.types ?? []);
 
     showDialog(
@@ -60,15 +55,7 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildField(nameController, 'Nombre'),
-                const SizedBox(height: 12),
-                _buildField(setsController, 'Series',
-                    isNumber: true),
-                const SizedBox(height: 12),
-                _buildField(repsController, 'Repeticiones',
-                    isNumber: true),
                 const SizedBox(height: 20),
-
-                // Selector de músculo
                 const Text('MÚSCULO',
                     style: TextStyle(
                         color: AppColors.textSecondary,
@@ -85,20 +72,18 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
                   decoration: InputDecoration(
                     enabledBorder: OutlineInputBorder(
                       borderSide: BorderSide(
-                          color: AppColors.primary.withOpacity(0.4)),
+                          color: AppColors.primary.withValues(alpha: 0.4)),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     focusedBorder: OutlineInputBorder(
-                      borderSide:
-                          BorderSide(color: AppColors.primary),
+                      borderSide: BorderSide(color: AppColors.primary),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     contentPadding: const EdgeInsets.symmetric(
                         horizontal: 12, vertical: 8),
                   ),
                   items: MuscleData.muscles.map((m) {
-                    return DropdownMenuItem(
-                        value: m, child: Text(m));
+                    return DropdownMenuItem(value: m, child: Text(m));
                   }).toList(),
                   onChanged: (value) {
                     setDialogState(() {
@@ -107,8 +92,6 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
                     });
                   },
                 ),
-
-                // Selector de tipos
                 if (selectedMuscle != null) ...[
                   const SizedBox(height: 20),
                   const Text('TIPOS',
@@ -120,47 +103,39 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
                   Wrap(
                     spacing: 8,
                     runSpacing: 8,
-                    children: MuscleData.typesFor(selectedMuscle!)
-                        .map((type) {
-                      final isSelected =
-                          selectedTypes.contains(type);
+                    children:
+                        MuscleData.typesFor(selectedMuscle!).map((type) {
+                      final isSelected = selectedTypes.contains(type);
                       return GestureDetector(
-                        onTap: () {
-                          setDialogState(() {
-                            isSelected
-                                ? selectedTypes.remove(type)
-                                : selectedTypes.add(type);
-                          });
-                        },
+                        onTap: () => setDialogState(() {
+                          isSelected
+                              ? selectedTypes.remove(type)
+                              : selectedTypes.add(type);
+                        }),
                         child: Container(
                           padding: const EdgeInsets.symmetric(
                               horizontal: 12, vertical: 6),
                           decoration: BoxDecoration(
                             color: isSelected
-                                ? AppColors.primary
-                                    .withOpacity(0.2)
+                                ? AppColors.primary.withValues(alpha: 0.2)
                                 : AppColors.surface,
-                            borderRadius:
-                                BorderRadius.circular(20),
+                            borderRadius: BorderRadius.circular(20),
                             border: Border.all(
                               color: isSelected
                                   ? AppColors.primary
-                                  : AppColors.primary
-                                      .withOpacity(0.2),
+                                  : AppColors.primary.withValues(alpha: 0.2),
                             ),
                           ),
-                          child: Text(
-                            type,
-                            style: TextStyle(
-                              color: isSelected
-                                  ? AppColors.primary
-                                  : AppColors.textSecondary,
-                              fontSize: 12,
-                              fontWeight: isSelected
-                                  ? FontWeight.bold
-                                  : FontWeight.normal,
-                            ),
-                          ),
+                          child: Text(type,
+                              style: TextStyle(
+                                color: isSelected
+                                    ? AppColors.primary
+                                    : AppColors.textSecondary,
+                                fontSize: 12,
+                                fontWeight: isSelected
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
+                              )),
                         ),
                       );
                     }).toList(),
@@ -178,17 +153,10 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
             TextButton(
               onPressed: () async {
                 final name = nameController.text.trim();
-                final sets = int.tryParse(setsController.text);
-                final reps = int.tryParse(repsController.text);
-                if (name.isEmpty ||
-                    sets == null ||
-                    reps == null ||
-                    selectedMuscle == null) return;
+                if (name.isEmpty || selectedMuscle == null) return;
 
                 final exercise = Exercise(
                   name: name,
-                  sets: sets,
-                  reps: reps,
                   muscle: selectedMuscle!,
                   types: selectedTypes,
                 );
@@ -213,12 +181,9 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
     );
   }
 
-  Widget _buildField(TextEditingController controller, String label,
-      {bool isNumber = false}) {
+  Widget _buildField(TextEditingController controller, String label) {
     return TextField(
       controller: controller,
-      keyboardType:
-          isNumber ? TextInputType.number : TextInputType.text,
       style: const TextStyle(color: Colors.white),
       decoration: InputDecoration(
         labelText: label,
@@ -275,13 +240,12 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
       ),
       body: Column(
         children: [
-          // Filtro por músculo
           SizedBox(
             height: 48,
             child: ListView(
               scrollDirection: Axis.horizontal,
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 16, vertical: 8),
               children: [
                 _buildFilterChip('Todos', null),
                 ...MuscleData.muscles
@@ -289,8 +253,6 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
               ],
             ),
           ),
-
-          // Lista
           Expanded(
             child: _filteredExercises.isEmpty
                 ? Center(
@@ -319,30 +281,19 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
                                 color: Colors.white,
                                 fontWeight: FontWeight.bold),
                           ),
-                          subtitle: Column(
-                            crossAxisAlignment:
-                                CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                '${exercise.sets} series x ${exercise.reps} reps',
-                                style: const TextStyle(
-                                    color: AppColors.textSecondary),
-                              ),
-                              if (exercise.muscle.isNotEmpty)
-                                Text(
+                          subtitle: exercise.muscle.isNotEmpty
+                              ? Text(
                                   exercise.muscle +
                                       (exercise.types.isNotEmpty
                                           ? ' · ${exercise.types.join(', ')}'
                                           : ''),
                                   style: TextStyle(
-                                    color: AppColors.primary
-                                        .withOpacity(0.7),
+                                    color:
+                                        AppColors.primary.withValues(alpha: 0.7),
                                     fontSize: 11,
                                   ),
-                                ),
-                            ],
-                          ),
-                          isThreeLine: exercise.muscle.isNotEmpty,
+                                )
+                              : null,
                           trailing: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
@@ -386,20 +337,21 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
             const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
         decoration: BoxDecoration(
           color: isSelected
-              ? AppColors.primary.withOpacity(0.2)
+              ? AppColors.primary.withValues(alpha: 0.2)
               : AppColors.surface,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: isSelected
                 ? AppColors.primary
-                : AppColors.primary.withOpacity(0.2),
+                : AppColors.primary.withValues(alpha: 0.2),
           ),
         ),
         child: Text(
           label,
           style: TextStyle(
-            color:
-                isSelected ? AppColors.primary : AppColors.textSecondary,
+            color: isSelected
+                ? AppColors.primary
+                : AppColors.textSecondary,
             fontSize: 12,
             fontWeight:
                 isSelected ? FontWeight.bold : FontWeight.normal,

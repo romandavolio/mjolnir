@@ -74,13 +74,13 @@ class _ConfigScreenState extends State<ConfigScreen> {
         padding: const EdgeInsets.symmetric(vertical: 20),
         decoration: BoxDecoration(
           color: isSelected
-              ? AppColors.primary.withOpacity(0.12)
+              ? AppColors.primary.withValues(alpha: 0.12)
               : AppColors.surface,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: isSelected
                 ? AppColors.primary
-                : AppColors.primary.withOpacity(0.2),
+                : AppColors.primary.withValues(alpha: 0.2),
             width: 1.5,
           ),
         ),
@@ -100,7 +100,7 @@ class _ConfigScreenState extends State<ConfigScreen> {
               label,
               style: TextStyle(
                 color: isSelected
-                    ? AppColors.primary.withOpacity(0.7)
+                    ? AppColors.primary.withValues(alpha: 0.7)
                     : AppColors.textSecondary,
                 fontSize: 11,
                 letterSpacing: 1,

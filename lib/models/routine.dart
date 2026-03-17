@@ -1,14 +1,14 @@
-import 'package:mjolnir/models/exercise.dart';
+import 'package:mjolnir/models/routine_exercise.dart';
 
 class Routine {
   final String id;
   String name;
-  List<Exercise> exercises;
+  List<RoutineExercise> exercises;
 
   Routine({
     required this.id,
     required this.name,
-    List<Exercise>? exercises,
+    List<RoutineExercise>? exercises,
   }) : exercises = exercises ?? [];
 
   Map<String, dynamic> toJson() {
@@ -24,7 +24,7 @@ class Routine {
       id: json['id'],
       name: json['name'],
       exercises: (json['exercises'] as List)
-          .map((e) => Exercise.fromJson(e))
+          .map((e) => RoutineExercise.fromJson(e))
           .toList(),
     );
   }

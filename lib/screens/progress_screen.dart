@@ -63,7 +63,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
                       color: AppColors.surface,
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(
-                        color: AppColors.primary.withOpacity(0.25),
+                        color: AppColors.primary.withValues(alpha: 0.25),
                         width: 1.5,
                       ),
                     ),
@@ -73,10 +73,10 @@ class _ProgressScreenState extends State<ProgressScreen> {
                           width: 40,
                           height: 40,
                           decoration: BoxDecoration(
-                            color: AppColors.primary.withOpacity(0.1),
+                            color: AppColors.primary.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(10),
                             border: Border.all(
-                              color: AppColors.primary.withOpacity(0.3),
+                              color: AppColors.primary.withValues(alpha: 0.3),
                             ),
                           ),
                           child: const Icon(
@@ -100,7 +100,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
                               ),
                               const SizedBox(height: 3),
                               Text(
-                                '${exercise.sets} series x ${exercise.reps} reps',
+                                exercise.muscle.isNotEmpty ? exercise.muscle : 'Sin músculo asignado',
                                 style: const TextStyle(
                                   color: AppColors.textSecondary,
                                   fontSize: 12,
