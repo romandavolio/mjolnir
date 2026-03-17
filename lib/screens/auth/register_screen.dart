@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mjolnir/core/app_colors.dart';
 import 'package:mjolnir/screens/welcome_screen.dart';
 import 'package:mjolnir/services/auth_service.dart';
+import 'package:mjolnir/screens/auth/profile_setup_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -18,32 +19,34 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _loading = false;
   String? _error;
 
-  Future<void> _register() async {
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
+Future<void> _register() async {
+  setState(() {
+    _loading = true;
+    _error = null;
+  });
 
-    try {
-      await AuthService.register(
-        email: _emailController.text.trim(),
-        password: _passwordController.text.trim(),
-        name: _nameController.text.trim(),
-        role: _selectedRole,
+  try {
+    final profile = await AuthService.register(
+      email: _emailController.text.trim(),
+      password: _passwordController.text.trim(),
+      name: _nameController.text.trim(),
+      role: _selectedRole,
+    );
+    if (mounted) {
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ProfileSetupScreen(profile: profile),
+        ),
+        (_) => false,
       );
-      if (mounted) {
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (_) => const WelcomeScreen()),
-          (_) => false,
-        );
-      }
-    } catch (e) {
-      setState(() => _error = 'Error al registrarse. Verificá los datos.');
-    } finally {
-      setState(() => _loading = false);
     }
+  } catch (e) {
+    setState(() => _error = 'Error al registrarse. Verificá los datos.');
+  } finally {
+    setState(() => _loading = false);
   }
+}
 
   @override
   Widget build(BuildContext context) {
@@ -63,36 +66,44 @@ class _RegisterScreenState extends State<RegisterScreen> {
               const SizedBox(height: 16),
               _buildField(_nameController, 'Nombre completo'),
               const SizedBox(height: 16),
-              _buildField(_emailController, 'Email',
-                  keyboardType: TextInputType.emailAddress),
+              _buildField(
+                _emailController,
+                'Email',
+                keyboardType: TextInputType.emailAddress,
+              ),
               const SizedBox(height: 16),
-              _buildField(_passwordController, 'Contraseña',
-                  obscure: true),
+              _buildField(_passwordController, 'Contraseña', obscure: true),
               const SizedBox(height: 24),
-              const Text('ROL',
-                  style: TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 11,
-                      letterSpacing: 1.5)),
+              const Text(
+                'ROL',
+                style: TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 11,
+                  letterSpacing: 1.5,
+                ),
+              ),
               const SizedBox(height: 12),
               Row(
                 children: [
                   Expanded(
-                    child: _buildRoleOption('alumno', 'Alumno',
-                        Icons.fitness_center),
+                    child: _buildRoleOption(
+                      'alumno',
+                      'Alumno',
+                      Icons.fitness_center,
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: _buildRoleOption(
-                        'trainer', 'Trainer', Icons.sports),
+                    child: _buildRoleOption('trainer', 'Trainer', Icons.sports),
                   ),
                 ],
               ),
               if (_error != null) ...[
                 const SizedBox(height: 16),
-                Text(_error!,
-                    style: const TextStyle(
-                        color: Colors.redAccent, fontSize: 13)),
+                Text(
+                  _error!,
+                  style: const TextStyle(color: Colors.redAccent, fontSize: 13),
+                ),
               ],
               const SizedBox(height: 32),
               SizedBox(
@@ -112,11 +123,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           height: 20,
                           width: 20,
                           child: CircularProgressIndicator(
-                              strokeWidth: 2, color: Colors.black),
+                            strokeWidth: 2,
+                            color: Colors.black,
+                          ),
                         )
-                      : const Text('Crear cuenta',
+                      : const Text(
+                          'Crear cuenta',
                           style: TextStyle(
-                              fontWeight: FontWeight.bold, fontSize: 16)),
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
                 ),
               ),
             ],
@@ -147,20 +164,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
         ),
         child: Column(
           children: [
-            Icon(icon,
-                color: isSelected
-                    ? AppColors.primary
-                    : AppColors.textSecondary,
-                size: 28),
+            Icon(
+              icon,
+              color: isSelected ? AppColors.primary : AppColors.textSecondary,
+              size: 28,
+            ),
             const SizedBox(height: 8),
-            Text(label,
-                style: TextStyle(
-                  color: isSelected
-                      ? AppColors.primary
-                      : AppColors.textSecondary,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1,
-                )),
+            Text(
+              label,
+              style: TextStyle(
+                color: isSelected ? AppColors.primary : AppColors.textSecondary,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 1,
+              ),
+            ),
           ],
         ),
       ),
@@ -183,7 +200,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
         labelStyle: TextStyle(color: AppColors.textSecondary),
         enabledBorder: OutlineInputBorder(
           borderSide: BorderSide(
-              color: AppColors.primary.withValues(alpha: 0.4)),
+            color: AppColors.primary.withValues(alpha: 0.4),
+          ),
           borderRadius: BorderRadius.circular(12),
         ),
         focusedBorder: OutlineInputBorder(

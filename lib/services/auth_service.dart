@@ -66,4 +66,9 @@ class AuthService {
   static Future<void> logout() async {
     await _auth.signOut();
   }
+
+  // Actualizar perfil
+  static Future<void> updateProfile(UserProfile profile) async {
+    await _db.collection('usuarios').doc(profile.uid).update(profile.toJson());
+  }
 }

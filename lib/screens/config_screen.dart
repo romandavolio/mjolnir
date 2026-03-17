@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:mjolnir/core/app_colors.dart';
-import 'package:mjolnir/services/storage_service.dart';
 import 'package:mjolnir/services/routine_service.dart';
 
 class ConfigScreen extends StatefulWidget {
