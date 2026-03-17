@@ -292,6 +292,102 @@ class _AlumnoDetailScreenState extends State<AlumnoDetailScreen> {
                     ),
                   ),
                   const SizedBox(height: 24),
+                  // Datos personales del alumno
+                  if (widget.alumno.age != null ||
+                      widget.alumno.height != null ||
+                      widget.alumno.weight != null ||
+                      widget.alumno.goal != null ||
+                      widget.alumno.experienceLevel != null ||
+                      widget.alumno.injuries != null) ...[
+                    const Text(
+                      'DATOS PERSONALES',
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 11,
+                        letterSpacing: 1.5,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: AppColors.surface,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: AppColors.primary.withValues(alpha: 0.25),
+                        ),
+                      ),
+                      child: Column(
+                        children: [
+                          if (widget.alumno.age != null ||
+                              widget.alumno.height != null)
+                            _buildDataRow([
+                              if (widget.alumno.age != null)
+                                _dataItem('Edad', '${widget.alumno.age} años'),
+                              if (widget.alumno.height != null)
+                                _dataItem(
+                                  'Altura',
+                                  '${widget.alumno.height!.toInt()} cm',
+                                ),
+                            ]),
+                          if (widget.alumno.weight != null ||
+                              widget.alumno.targetWeight != null)
+                            _buildDataRow([
+                              if (widget.alumno.weight != null)
+                                _dataItem(
+                                  'Peso',
+                                  '${widget.alumno.weight!.toInt()} kg',
+                                ),
+                              if (widget.alumno.targetWeight != null)
+                                _dataItem(
+                                  'Objetivo',
+                                  '${widget.alumno.targetWeight!.toInt()} kg',
+                                ),
+                            ]),
+                          if (widget.alumno.experienceLevel != null)
+                            _buildDataRow([
+                              _dataItem(
+                                'Nivel',
+                                widget.alumno.experienceLevel!,
+                              ),
+                            ]),
+                          if (widget.alumno.goal != null)
+                            _buildDataRow([
+                              _dataItem('Meta', widget.alumno.goal!),
+                            ]),
+                          if (widget.alumno.injuries != null) ...[
+                            const Divider(color: Colors.white10),
+                            const SizedBox(height: 8),
+                            Align(
+                              alignment: Alignment.centerLeft,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'Lesiones / limitaciones',
+                                    style: TextStyle(
+                                      color: AppColors.textSecondary,
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    widget.alumno.injuries!,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                  ],
                   const Text(
                     'RUTINAS ASIGNADAS',
                     style: TextStyle(
@@ -428,6 +524,41 @@ class _AlumnoDetailScreenState extends State<AlumnoDetailScreen> {
         onPressed: _showAssignDialog,
         child: const Icon(Icons.add, color: Colors.black),
       ),
+    );
+  }
+
+  Widget _buildDataRow(List<Widget> items) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        children: items
+            .expand(
+              (item) => [Expanded(child: item), const SizedBox(width: 12)],
+            )
+            .take(items.length * 2 - 1)
+            .toList(),
+      ),
+    );
+  }
+
+  Widget _dataItem(String label, String value) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(color: AppColors.textSecondary, fontSize: 11),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          value,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ],
     );
   }
 }

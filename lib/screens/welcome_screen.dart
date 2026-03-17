@@ -217,10 +217,13 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
           label: 'CONFIG',
           subtitle: 'Preferencias',
           icon: Icons.settings_outlined,
-          onPressed: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const ConfigScreen()),
-          ),
+          onPressed: () async {
+            await Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const ConfigScreen()),
+            );
+            _loadProfile();
+          },
         ),
     ];
 

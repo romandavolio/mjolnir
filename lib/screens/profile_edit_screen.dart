@@ -1,30 +1,30 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:mjolnir/core/app_colors.dart';
 import 'package:mjolnir/models/user_profile.dart';
-import 'package:mjolnir/screens/welcome_screen.dart';
 import 'package:mjolnir/services/auth_service.dart';
-import 'package:flutter/cupertino.dart';
 
-class ProfileSetupScreen extends StatefulWidget {
+class ProfileEditScreen extends StatefulWidget {
   final UserProfile profile;
 
-  const ProfileSetupScreen({super.key, required this.profile});
+  const ProfileEditScreen({super.key, required this.profile});
 
   @override
-  State<ProfileSetupScreen> createState() => _ProfileSetupScreenState();
+  State<ProfileEditScreen> createState() => _ProfileEditScreenState();
 }
 
-class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
-  double _height = 170;
-  double _weight = 70;
-  double _targetWeight = 70;
+class _ProfileEditScreenState extends State<ProfileEditScreen> {
+  final _nameController = TextEditingController();
   final _injuriesController = TextEditingController();
 
+  late double _height;
+  late double _weight;
+  late double _targetWeight;
+  DateTime? _selectedBirthDate;
   String? _selectedSex;
   String? _selectedLevel;
   String? _selectedGoal;
   bool _loading = false;
-  DateTime? _selectedBirthDate;
 
   final List<String> _sexOptions = ['Masculino', 'Femenino'];
   final List<String> _levelOptions = ['Principiante', 'Intermedio', 'Avanzado'];
@@ -35,10 +35,26 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     'Rendimiento',
   ];
 
+  @override
+  void initState() {
+    super.initState();
+    final p = widget.profile;
+    _nameController.text = p.name;
+    _injuriesController.text = p.injuries ?? '';
+    _height = p.height ?? 170;
+    _weight = p.weight ?? 70;
+    _targetWeight = p.targetWeight ?? 70;
+    _selectedBirthDate = p.birthDate;
+    _selectedSex = p.biologicalSex;
+    _selectedLevel = p.experienceLevel;
+    _selectedGoal = p.goal;
+  }
+
   Future<void> _save() async {
     setState(() => _loading = true);
     try {
       final updated = widget.profile.copyWith(
+        name: _nameController.text.trim(),
         height: _height,
         weight: _weight,
         birthDate: _selectedBirthDate,
@@ -51,13 +67,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
             : _injuriesController.text.trim(),
       );
       await AuthService.updateProfile(updated);
-      if (mounted) {
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (_) => const WelcomeScreen()),
-          (_) => false,
-        );
-      }
+      if (mounted) Navigator.pop(context, updated);
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -66,7 +76,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
   Future<void> _pickBirthDate() async {
     final picked = await showDatePicker(
       context: context,
-      initialDate: DateTime(2000),
+      initialDate: _selectedBirthDate ?? DateTime(2000),
       firstDate: DateTime(1940),
       lastDate: DateTime.now(),
       builder: (context, child) => Theme(
@@ -91,10 +101,8 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     required Function(double) onSelected,
   }) {
     double tempValue = initialValue;
-    final initialIndex = (initialValue - minValue).toInt().clamp(
-      0,
-      maxValue - minValue,
-    );
+    final initialIndex =
+        (initialValue - minValue).toInt().clamp(0, maxValue - minValue);
 
     showModalBottomSheet(
       context: context,
@@ -106,38 +114,31 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: const Text(
-                    'Cancelar',
-                    style: TextStyle(color: Colors.white60),
-                  ),
+                  child: const Text('Cancelar',
+                      style: TextStyle(color: Colors.white60)),
                 ),
-                Text(
-                  title.toUpperCase(),
-                  style: const TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 11,
-                    letterSpacing: 1.5,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+                Text(title.toUpperCase(),
+                    style: const TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 11,
+                        letterSpacing: 1.5,
+                        fontWeight: FontWeight.w600)),
                 TextButton(
                   onPressed: () {
                     onSelected(tempValue);
                     Navigator.pop(context);
                   },
-                  child: Text(
-                    'Listo',
-                    style: TextStyle(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                  child: Text('Listo',
+                      style: TextStyle(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.bold)),
                 ),
               ],
             ),
@@ -146,8 +147,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
             height: 200,
             child: CupertinoPicker(
               scrollController: FixedExtentScrollController(
-                initialItem: initialIndex,
-              ),
+                  initialItem: initialIndex),
               itemExtent: 40,
               onSelectedItemChanged: (index) {
                 tempValue = (minValue + index).toDouble();
@@ -155,10 +155,9 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
               children: List.generate(
                 maxValue - minValue + 1,
                 (i) => Center(
-                  child: Text(
-                    '${minValue + i} $suffix',
-                    style: const TextStyle(color: Colors.white, fontSize: 20),
-                  ),
+                  child: Text('${minValue + i} $suffix',
+                      style: const TextStyle(
+                          color: Colors.white, fontSize: 20)),
                 ),
               ),
             ),
@@ -174,21 +173,22 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Tu perfil'),
+        title: const Text('Editar perfil'),
         backgroundColor: AppColors.backgroundAppBar,
         foregroundColor: AppColors.primary,
-        automaticallyImplyLeading: false,
         actions: [
           TextButton(
-            onPressed: () => Navigator.pushAndRemoveUntil(
-              context,
-              MaterialPageRoute(builder: (_) => const WelcomeScreen()),
-              (_) => false,
-            ),
-            child: Text(
-              'Omitir',
-              style: TextStyle(color: AppColors.textSecondary),
-            ),
+            onPressed: _loading ? null : _save,
+            child: _loading
+                ? const SizedBox(
+                    height: 18,
+                    width: 18,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: Colors.black))
+                : Text('Guardar',
+                    style: TextStyle(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -197,20 +197,28 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Completá tu perfil',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
+            // Nombre
+            _sectionLabel('NOMBRE'),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _nameController,
+              style: const TextStyle(color: Colors.white),
+              decoration: InputDecoration(
+                labelText: 'Nombre completo',
+                labelStyle:
+                    TextStyle(color: AppColors.textSecondary),
+                enabledBorder: OutlineInputBorder(
+                  borderSide: BorderSide(
+                      color: AppColors.primary.withValues(alpha: 0.4)),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: AppColors.primary),
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
             ),
-            const SizedBox(height: 4),
-            const Text(
-              'Esta información ayuda a tu trainer a conocerte mejor.',
-              style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
-            ),
-            const SizedBox(height: 28),
+            const SizedBox(height: 24),
 
             // Datos básicos
             _sectionLabel('DATOS BÁSICOS'),
@@ -227,7 +235,8 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                       suffix: 'cm',
                       onSelected: (v) => setState(() => _height = v),
                     ),
-                    child: _buildPickerField('Altura', '${_height.toInt()} cm'),
+                    child: _buildPickerField(
+                        'Altura', '${_height.toInt()} cm'),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -258,9 +267,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                       onSelected: (v) => setState(() => _weight = v),
                     ),
                     child: _buildPickerField(
-                      'Peso actual',
-                      '${_weight.toInt()} kg',
-                    ),
+                        'Peso actual', '${_weight.toInt()} kg'),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -272,12 +279,11 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                       minValue: 30,
                       maxValue: 200,
                       suffix: 'kg',
-                      onSelected: (v) => setState(() => _targetWeight = v),
+                      onSelected: (v) =>
+                          setState(() => _targetWeight = v),
                     ),
                     child: _buildPickerField(
-                      'Peso objetivo',
-                      '${_targetWeight.toInt()} kg',
-                    ),
+                        'Peso objetivo', '${_targetWeight.toInt()} kg'),
                   ),
                 ),
               ],
@@ -295,9 +301,9 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                     onTap: () => setState(() => _selectedSex = sex),
                     child: Container(
                       margin: EdgeInsets.only(
-                        right: sex == _sexOptions.first ? 12 : 0,
-                      ),
-                      padding: const EdgeInsets.symmetric(vertical: 14),
+                          right: sex == _sexOptions.first ? 12 : 0),
+                      padding:
+                          const EdgeInsets.symmetric(vertical: 14),
                       decoration: BoxDecoration(
                         color: isSelected
                             ? AppColors.primary.withValues(alpha: 0.12)
@@ -311,15 +317,13 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                         ),
                       ),
                       child: Center(
-                        child: Text(
-                          sex,
-                          style: TextStyle(
-                            color: isSelected
-                                ? AppColors.primary
-                                : AppColors.textSecondary,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+                        child: Text(sex,
+                            style: TextStyle(
+                              color: isSelected
+                                  ? AppColors.primary
+                                  : AppColors.textSecondary,
+                              fontWeight: FontWeight.bold,
+                            )),
                       ),
                     ),
                   ),
@@ -369,11 +373,11 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
               maxLines: 3,
               decoration: InputDecoration(
                 hintText: 'Ej: Dolor lumbar, rodilla derecha...',
-                hintStyle: const TextStyle(color: AppColors.textSecondary),
+                hintStyle:
+                    const TextStyle(color: AppColors.textSecondary),
                 enabledBorder: OutlineInputBorder(
                   borderSide: BorderSide(
-                    color: AppColors.primary.withValues(alpha: 0.4),
-                  ),
+                      color: AppColors.primary.withValues(alpha: 0.4)),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 focusedBorder: OutlineInputBorder(
@@ -383,38 +387,6 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
               ),
             ),
             const SizedBox(height: 32),
-
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: _loading ? null : _save,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.black,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: _loading
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.black,
-                        ),
-                      )
-                    : const Text(
-                        'Guardar perfil',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
-                      ),
-              ),
-            ),
-            const SizedBox(height: 16),
           ],
         ),
       ),
@@ -422,13 +394,35 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
   }
 
   Widget _sectionLabel(String label) {
-    return Text(
-      label,
-      style: const TextStyle(
-        color: AppColors.textSecondary,
-        fontSize: 11,
-        fontWeight: FontWeight.w600,
-        letterSpacing: 1.5,
+    return Text(label,
+        style: const TextStyle(
+            color: AppColors.textSecondary,
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 1.5));
+  }
+
+  Widget _buildPickerField(String label, String value) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+            color: AppColors.primary.withValues(alpha: 0.4)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label,
+              style: const TextStyle(
+                  color: AppColors.textSecondary, fontSize: 11)),
+          const SizedBox(height: 4),
+          Text(value,
+              style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold)),
+        ],
       ),
     );
   }
@@ -447,45 +441,14 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
               : AppColors.primary.withValues(alpha: 0.2),
         ),
       ),
-      child: Text(
-        label,
-        style: TextStyle(
-          color: isSelected ? AppColors.primary : AppColors.textSecondary,
-          fontSize: 13,
-          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPickerField(String label, String value) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.primary.withValues(alpha: 0.4)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: const TextStyle(
-              color: AppColors.textSecondary,
-              fontSize: 11,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ],
-      ),
+      child: Text(label,
+          style: TextStyle(
+            color:
+                isSelected ? AppColors.primary : AppColors.textSecondary,
+            fontSize: 13,
+            fontWeight:
+                isSelected ? FontWeight.bold : FontWeight.normal,
+          )),
     );
   }
 }

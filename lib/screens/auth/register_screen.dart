@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:mjolnir/core/app_colors.dart';
-import 'package:mjolnir/screens/welcome_screen.dart';
 import 'package:mjolnir/services/auth_service.dart';
 import 'package:mjolnir/screens/auth/profile_setup_screen.dart';
 
