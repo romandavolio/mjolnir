@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:mjolnir/models/assigned_routine.dart';
 import 'package:mjolnir/models/routine.dart';
 import 'package:mjolnir/services/auth_service.dart';
+import 'package:mjolnir/models/routine_exercise.dart';
 
 class RoutineService {
   static final _db = FirebaseFirestore.instance;
@@ -131,5 +132,38 @@ class RoutineService {
         .get();
     if (!doc.exists) return 0;
     return (doc.data()!['weight'] as num).toDouble();
+  }
+
+  static Future<bool> routineHasWeights({
+    required String alumnoId,
+    required String rutinaId,
+    required List<RoutineExercise> exercises,
+  }) async {
+    for (final routineExercise in exercises) {
+      for (int i = 0; i < routineExercise.series.length; i++) {
+        final weight = await loadSerieWeight(
+          exerciseName: routineExercise.exercise.name,
+          serieIndex: i,
+          rutinaId: rutinaId,
+          uid: alumnoId,
+        );
+        if (weight > 0) return true;
+      }
+    }
+    return false;
+  }
+
+  static Future<void> saveUnit(String unit) async {
+    final uid = AuthService.currentUser?.uid;
+    if (uid == null) return;
+    await _db.collection('usuarios').doc(uid).update({'weightUnit': unit});
+  }
+
+  static Future<String> loadUnit() async {
+    final uid = AuthService.currentUser?.uid;
+    if (uid == null) return 'kg';
+    final doc = await _db.collection('usuarios').doc(uid).get();
+    if (!doc.exists) return 'kg';
+    return doc.data()?['weightUnit'] ?? 'kg';
   }
 }

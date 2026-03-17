@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mjolnir/core/app_colors.dart';
 import 'package:mjolnir/services/storage_service.dart';
+import 'package:mjolnir/services/routine_service.dart';
 
 class ConfigScreen extends StatefulWidget {
   const ConfigScreen({super.key});
@@ -19,12 +20,12 @@ class _ConfigScreenState extends State<ConfigScreen> {
   }
 
   Future<void> _loadUnit() async {
-    final unit = await StorageService.loadUnit();
+    final unit = await RoutineService.loadUnit();
     setState(() => _selectedUnit = unit);
   }
 
   Future<void> _selectUnit(String unit) async {
-    await StorageService.saveUnit(unit);
+    await RoutineService.saveUnit(unit);
     setState(() => _selectedUnit = unit);
   }
 

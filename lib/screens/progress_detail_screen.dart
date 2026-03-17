@@ -4,6 +4,7 @@ import 'package:mjolnir/core/app_colors.dart';
 import 'package:mjolnir/models/exercise.dart';
 import 'package:mjolnir/models/weight_entry.dart';
 import 'package:mjolnir/services/storage_service.dart';
+import 'package:mjolnir/services/routine_service.dart';
 
 class ProgressDetailScreen extends StatefulWidget {
   final Exercise exercise;
@@ -27,7 +28,7 @@ class _ProgressDetailScreenState extends State<ProgressDetailScreen> {
   Future<void> _loadData() async {
     final saved =
         await StorageService.loadWeightHistory(widget.exercise.name);
-    final unit = await StorageService.loadUnit();
+    final unit = await RoutineService.loadUnit();
     setState(() {
       history = saved;
       _unit = unit;

@@ -37,7 +37,7 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
   }
 
   Future<void> _loadData() async {
-    final unit = await StorageService.loadUnit();
+    final unit = await RoutineService.loadUnit();
     final catalog = await StorageService.loadExercises();
 
     for (final routineExercise in widget.routine.exercises) {

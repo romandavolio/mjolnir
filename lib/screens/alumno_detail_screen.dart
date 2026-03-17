@@ -166,21 +166,26 @@ class _AlumnoDetailScreenState extends State<AlumnoDetailScreen> {
     );
   }
 
-  void _deleteAssignment(AssignedRoutine assignment, Routine routine) {
-    final hasWeights = routine.exercises.any(
-      (re) => re.series.any((s) => s.weight > 0),
+  void _deleteAssignment(AssignedRoutine assignment, Routine routine) async {
+    final hasWeights = await RoutineService.routineHasWeights(
+      alumnoId: widget.alumno.uid,
+      rutinaId: routine.id,
+      exercises: routine.exercises,
     );
 
     if (hasWeights) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('No se puede eliminar una rutina con pesos cargados'),
-          backgroundColor: Colors.redAccent,
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No se puede eliminar una rutina con pesos cargados'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
       return;
     }
 
+    if (!mounted) return;
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
