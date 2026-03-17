@@ -1,100 +1,427 @@
 import 'package:flutter/material.dart';
 import 'package:mjolnir/core/app_colors.dart';
+import 'package:mjolnir/models/assigned_routine.dart';
+import 'package:mjolnir/models/routine.dart';
 import 'package:mjolnir/models/user_profile.dart';
+import 'package:mjolnir/screens/routine_detail_screen.dart';
+import 'package:mjolnir/services/auth_service.dart';
+import 'package:mjolnir/services/routine_service.dart';
 
-class AlumnoDetailScreen extends StatelessWidget {
+class AlumnoDetailScreen extends StatefulWidget {
   final UserProfile alumno;
 
   const AlumnoDetailScreen({super.key, required this.alumno});
+
+  @override
+  State<AlumnoDetailScreen> createState() => _AlumnoDetailScreenState();
+}
+
+class _AlumnoDetailScreenState extends State<AlumnoDetailScreen> {
+  List<Routine> _myRoutines = [];
+  List<MapEntry<AssignedRoutine, Routine>> _assignedRoutines = [];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    final myRoutines = await RoutineService.loadMyRoutines();
+    final assignments = await RoutineService.getAssignedByTrainer(
+      AuthService.currentUser!.uid,
+      widget.alumno.uid,
+    );
+
+    final List<MapEntry<AssignedRoutine, Routine>> assignedWithRoutines = [];
+    for (final assignment in assignments) {
+      final routine = await RoutineService.loadRoutine(
+        assignment.trainerId,
+        assignment.rutinaId,
+      );
+      if (routine != null) {
+        assignedWithRoutines.add(MapEntry(assignment, routine));
+      }
+    }
+
+    if (!mounted) return;
+    setState(() {
+      _myRoutines = myRoutines;
+      _assignedRoutines = assignedWithRoutines;
+      _loading = false;
+    });
+  }
+
+  void _showAssignDialog() {
+    final available = _myRoutines
+        .where((r) => !_assignedRoutines.any((e) => e.value.id == r.id))
+        .toList();
+
+    if (available.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No hay rutinas disponibles para asignar'),
+        ),
+      );
+      return;
+    }
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.backgroundAppBar,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'ASIGNAR RUTINA',
+              style: TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 2,
+              ),
+            ),
+            const SizedBox(height: 16),
+            ...available.map(
+              (routine) => GestureDetector(
+                onTap: () async {
+                  await RoutineService.assignRoutine(
+                    alumnoId: widget.alumno.uid,
+                    rutinaId: routine.id,
+                  );
+                  Navigator.pop(context);
+                  _loadData();
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          '"${routine.name}" asignada a ${widget.alumno.name}',
+                        ),
+                        backgroundColor: AppColors.primary.withValues(
+                          alpha: 0.8,
+                        ),
+                      ),
+                    );
+                  }
+                },
+                child: Container(
+                  width: double.infinity,
+                  margin: const EdgeInsets.only(bottom: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 14,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: AppColors.primary.withValues(alpha: 0.25),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.fitness_center,
+                        color: AppColors.primary,
+                        size: 18,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              routine.name,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Text(
+                              '${routine.exercises.length} ejercicios',
+                              style: const TextStyle(
+                                color: AppColors.textSecondary,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Icon(Icons.add, color: AppColors.primary, size: 18),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _deleteAssignment(AssignedRoutine assignment, Routine routine) {
+    final hasWeights = routine.exercises.any(
+      (re) => re.series.any((s) => s.weight > 0),
+    );
+
+    if (hasWeights) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No se puede eliminar una rutina con pesos cargados'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+      return;
+    }
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.backgroundAppBar,
+        title: const Text(
+          'Eliminar rutina',
+          style: TextStyle(color: Colors.white),
+        ),
+        content: Text(
+          '¿Querés eliminar "${routine.name}" de este alumno?',
+          style: const TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text(
+              'Cancelar',
+              style: TextStyle(color: Colors.white60),
+            ),
+          ),
+          TextButton(
+            onPressed: () async {
+              await RoutineService.unassignRoutine(assignment.id);
+              Navigator.pop(context);
+              _loadData();
+            },
+            child: const Text(
+              'Eliminar',
+              style: TextStyle(color: Colors.redAccent),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: Text(alumno.name),
+        title: Text(widget.alumno.name),
         backgroundColor: AppColors.backgroundAppBar,
         foregroundColor: AppColors.primary,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Info del alumno
-            Container(
-              width: double.infinity,
+      body: _loading
+          ? const Center(
+              child: CircularProgressIndicator(color: AppColors.primary),
+            )
+          : Padding(
               padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                    color: AppColors.primary.withValues(alpha: 0.25)),
-              ),
-              child: Row(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  CircleAvatar(
-                    radius: 28,
-                    backgroundColor:
-                        AppColors.primary.withValues(alpha: 0.2),
-                    child: Text(
-                      alumno.name[0].toUpperCase(),
-                      style: TextStyle(
-                          color: AppColors.primary,
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold),
+                  // Info del alumno
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: AppColors.primary.withValues(alpha: 0.25),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 28,
+                          backgroundColor: AppColors.primary.withValues(
+                            alpha: 0.2,
+                          ),
+                          child: Text(
+                            widget.alumno.name[0].toUpperCase(),
+                            style: TextStyle(
+                              color: AppColors.primary,
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              widget.alumno.name,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Text(
+                              widget.alumno.email,
+                              style: const TextStyle(
+                                color: AppColors.textSecondary,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(width: 16),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(alumno.name,
-                          style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold)),
-                      Text(alumno.email,
-                          style: const TextStyle(
-                              color: AppColors.textSecondary,
-                              fontSize: 12)),
-                      const SizedBox(height: 4),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: AppColors.primary.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text('Alumno',
-                            style: TextStyle(
-                                color: AppColors.primary,
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold)),
-                      ),
-                    ],
+                  const SizedBox(height: 24),
+                  const Text(
+                    'RUTINAS ASIGNADAS',
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 11,
+                      letterSpacing: 1.5,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Expanded(
+                    child: _assignedRoutines.isEmpty
+                        ? const Center(
+                            child: Text(
+                              'No hay rutinas asignadas todavía.\nTocá + para asignar una.',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: Colors.white60,
+                                fontSize: 15,
+                              ),
+                            ),
+                          )
+                        : ListView.builder(
+                            itemCount: _assignedRoutines.length,
+                            itemBuilder: (context, index) {
+                              final entry = _assignedRoutines[index];
+                              final assignment = entry.key;
+                              final routine = entry.value;
+                              return GestureDetector(
+                                onTap: () async {
+                                  await Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => RoutineDetailScreen(
+                                        routine: routine,
+                                        onSave: () =>
+                                            RoutineService.saveRoutine(routine),
+                                        viewAsUid: widget.alumno.uid,
+                                      ),
+                                    ),
+                                  );
+                                  _loadData();
+                                },
+                                child: Container(
+                                  margin: const EdgeInsets.only(bottom: 12),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 20,
+                                    vertical: 18,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.surface,
+                                    borderRadius: BorderRadius.circular(14),
+                                    border: Border.all(
+                                      color: AppColors.primary.withValues(
+                                        alpha: 0.25,
+                                      ),
+                                      width: 1.5,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Container(
+                                        width: 40,
+                                        height: 40,
+                                        decoration: BoxDecoration(
+                                          color: AppColors.primary.withValues(
+                                            alpha: 0.1,
+                                          ),
+                                          borderRadius: BorderRadius.circular(
+                                            10,
+                                          ),
+                                          border: Border.all(
+                                            color: AppColors.primary.withValues(
+                                              alpha: 0.3,
+                                            ),
+                                          ),
+                                        ),
+                                        child: const Icon(
+                                          Icons.fitness_center,
+                                          color: AppColors.primary,
+                                          size: 20,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 16),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              routine.name,
+                                              style: const TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 15,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                            Text(
+                                              '${routine.exercises.length} ejercicios',
+                                              style: const TextStyle(
+                                                color: AppColors.textSecondary,
+                                                fontSize: 12,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      IconButton(
+                                        icon: const Icon(
+                                          Icons.delete_outline,
+                                          color: Colors.redAccent,
+                                          size: 20,
+                                        ),
+                                        onPressed: () => _deleteAssignment(
+                                          assignment,
+                                          routine,
+                                        ),
+                                      ),
+                                      const Icon(
+                                        Icons.chevron_right,
+                                        color: AppColors.textSecondary,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 24),
-            const Text('RUTINAS',
-                style: TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 11,
-                    letterSpacing: 1.5)),
-            const SizedBox(height: 12),
-            const Expanded(
-              child: Center(
-                child: Text(
-                  'Próximamente podrás asignar\nrutinas a este alumno.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.white60, fontSize: 15),
-                ),
-              ),
-            ),
-          ],
-        ),
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: AppColors.primary,
+        onPressed: _showAssignDialog,
+        child: const Icon(Icons.add, color: Colors.black),
       ),
     );
   }

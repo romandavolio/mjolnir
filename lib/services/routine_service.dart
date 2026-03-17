@@ -1,0 +1,135 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:mjolnir/models/assigned_routine.dart';
+import 'package:mjolnir/models/routine.dart';
+import 'package:mjolnir/services/auth_service.dart';
+
+class RoutineService {
+  static final _db = FirebaseFirestore.instance;
+
+  // --- Rutinas del trainer ---
+
+  static Future<void> saveRoutine(Routine routine) async {
+    final uid = AuthService.currentUser?.uid;
+    if (uid == null) return;
+    await _db
+        .collection('usuarios')
+        .doc(uid)
+        .collection('rutinas')
+        .doc(routine.id)
+        .set(routine.toJson());
+  }
+
+  static Future<void> deleteRoutine(String rutinaId) async {
+    final uid = AuthService.currentUser?.uid;
+    if (uid == null) return;
+    await _db
+        .collection('usuarios')
+        .doc(uid)
+        .collection('rutinas')
+        .doc(rutinaId)
+        .delete();
+  }
+
+  static Future<List<Routine>> loadMyRoutines() async {
+    final uid = AuthService.currentUser?.uid;
+    if (uid == null) return [];
+    final snapshot = await _db
+        .collection('usuarios')
+        .doc(uid)
+        .collection('rutinas')
+        .get();
+    return snapshot.docs.map((d) => Routine.fromJson(d.data())).toList();
+  }
+
+  static Future<Routine?> loadRoutine(String trainerId, String rutinaId) async {
+    final doc = await _db
+        .collection('usuarios')
+        .doc(trainerId)
+        .collection('rutinas')
+        .doc(rutinaId)
+        .get();
+    if (!doc.exists) return null;
+    return Routine.fromJson(doc.data()!);
+  }
+
+  // --- Asignaciones ---
+
+  static Future<void> assignRoutine({
+    required String alumnoId,
+    required String rutinaId,
+  }) async {
+    final trainerId = AuthService.currentUser?.uid;
+    if (trainerId == null) return;
+    final id = DateTime.now().millisecondsSinceEpoch.toString();
+    final assignment = AssignedRoutine(
+      id: id,
+      trainerId: trainerId,
+      alumnoId: alumnoId,
+      rutinaId: rutinaId,
+      fechaAsignacion: DateTime.now(),
+    );
+    await _db.collection('rutinas_asignadas').doc(id).set(assignment.toJson());
+  }
+
+  static Future<void> unassignRoutine(String asignacionId) async {
+    await _db.collection('rutinas_asignadas').doc(asignacionId).delete();
+  }
+
+  static Future<List<AssignedRoutine>> getAssignedToAlumno(
+    String alumnoId,
+  ) async {
+    final snapshot = await _db
+        .collection('rutinas_asignadas')
+        .where('alumnoId', isEqualTo: alumnoId)
+        .get();
+    return snapshot.docs
+        .map((d) => AssignedRoutine.fromJson(d.data()))
+        .toList();
+  }
+
+  static Future<List<AssignedRoutine>> getAssignedByTrainer(
+    String trainerId,
+    String alumnoId,
+  ) async {
+    final snapshot = await _db
+        .collection('rutinas_asignadas')
+        .where('trainerId', isEqualTo: trainerId)
+        .where('alumnoId', isEqualTo: alumnoId)
+        .get();
+    return snapshot.docs
+        .map((d) => AssignedRoutine.fromJson(d.data()))
+        .toList();
+  }
+
+  // --- Pesos por usuario ---
+
+  static Future<void> saveSerieWeight({
+    required String exerciseName,
+    required int serieIndex,
+    required double weight,
+    required String rutinaId,
+  }) async {
+    final uid = AuthService.currentUser?.uid;
+    if (uid == null) return;
+    await _db
+        .collection('pesos')
+        .doc('${uid}_${rutinaId}_${exerciseName}_$serieIndex')
+        .set({'weight': weight, 'updatedAt': DateTime.now().toIso8601String()});
+  }
+
+  static Future<double> loadSerieWeight({
+    required String exerciseName,
+    required int serieIndex,
+    required String rutinaId,
+    String? uid,
+  }) async {
+    final userId = uid ?? AuthService.currentUser?.uid;
+    if (userId == null) return 0;
+    final doc = await _db
+        .collection('pesos')
+        .doc('${userId}_${rutinaId}_${exerciseName}_$serieIndex')
+        .get();
+    if (!doc.exists) return 0;
+    return (doc.data()!['weight'] as num).toDouble();
+  }
+}

@@ -6,15 +6,20 @@ import 'package:mjolnir/models/routine.dart';
 import 'package:mjolnir/models/routine_exercise.dart';
 import 'package:mjolnir/models/serie.dart';
 import 'package:mjolnir/services/storage_service.dart';
+import 'package:mjolnir/services/routine_service.dart';
 
 class RoutineDetailScreen extends StatefulWidget {
   final Routine routine;
   final Future<void> Function() onSave;
+  final bool readOnly;
+  final String? viewAsUid;
 
   const RoutineDetailScreen({
     super.key,
     required this.routine,
     required this.onSave,
+    this.readOnly = false,
+    this.viewAsUid,
   });
 
   @override
@@ -34,6 +39,20 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
   Future<void> _loadData() async {
     final unit = await StorageService.loadUnit();
     final catalog = await StorageService.loadExercises();
+
+    for (final routineExercise in widget.routine.exercises) {
+      for (int i = 0; i < routineExercise.series.length; i++) {
+        final weight = await RoutineService.loadSerieWeight(
+          exerciseName: routineExercise.exercise.name,
+          serieIndex: i,
+          rutinaId: widget.routine.id,
+          uid: widget.viewAsUid,
+        );
+        routineExercise.series[i].weight = weight;
+      }
+    }
+
+    if (!mounted) return;
     setState(() {
       _unit = unit;
       _catalogExercises = catalog;
@@ -211,7 +230,7 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
 
   // --- Editar peso de una serie ---
 
-  void _editSerieWeight(Serie serie, String exerciseName) {
+  void _editSerieWeight(Serie serie, String exerciseName, int serieIndex) {
     final controller = TextEditingController(text: serie.weight.toString());
 
     showDialog(
@@ -247,8 +266,13 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
               final newWeight = double.tryParse(controller.text);
               if (newWeight != null) {
                 setState(() => serie.weight = newWeight);
+                await RoutineService.saveSerieWeight(
+                  exerciseName: exerciseName,
+                  serieIndex: serieIndex,
+                  weight: newWeight,
+                  rutinaId: widget.routine.id,
+                );
                 await StorageService.addWeightEntry(exerciseName, newWeight);
-                await _save();
               }
               Navigator.pop(context);
             },
@@ -896,8 +920,11 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
                                 ),
                                 const Spacer(),
                                 GestureDetector(
-                                  onTap: () =>
-                                      _editSerieWeight(serie, exercise.name),
+                                  onTap: () => _editSerieWeight(
+                                    serie,
+                                    exercise.name,
+                                    entry.key,
+                                  ),
                                   child: Container(
                                     padding: const EdgeInsets.symmetric(
                                       horizontal: 12,
@@ -930,11 +957,13 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
                 );
               },
             ),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: AppColors.primary,
-        onPressed: _showMuscleSelector,
-        child: const Icon(Icons.add, color: Colors.black),
-      ),
+      floatingActionButton: widget.readOnly
+          ? null
+          : FloatingActionButton(
+              backgroundColor: AppColors.primary,
+              onPressed: _showMuscleSelector,
+              child: const Icon(Icons.add, color: Colors.black),
+            ),
     );
   }
 }
