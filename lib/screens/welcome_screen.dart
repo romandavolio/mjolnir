@@ -11,6 +11,7 @@ import 'package:mjolnir/services/auth_service.dart';
 import 'package:mjolnir/services/user_service.dart';
 import 'package:mjolnir/screens/students_screen.dart';
 import 'package:mjolnir/screens/notifications_screen.dart';
+import 'package:mjolnir/services/notification_service.dart';
 
 class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({super.key});
@@ -22,17 +23,22 @@ class WelcomeScreen extends StatefulWidget {
 class _WelcomeScreenState extends State<WelcomeScreen> {
   UserProfile? _profile;
   bool _loading = true;
+  int _unreadNotifications = 0;
 
   @override
   void initState() {
     super.initState();
     _loadProfile();
+    NotificationService.initialize();
   }
 
   Future<void> _loadProfile() async {
     final profile = await UserService.getCurrentProfile();
+    final notifications = await NotificationService.getUnreadNotifications();
+    if (!mounted) return;
     setState(() {
       _profile = profile;
+      _unreadNotifications = notifications.length;
       _loading = false;
     });
   }
@@ -113,16 +119,36 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                   const SizedBox(width: 8),
                   if (_profile!.role == 'alumno')
                     GestureDetector(
-                      onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const NotificationsScreen(),
-                        ),
-                      ),
-                      child: const Icon(
-                        Icons.notifications_outlined,
-                        color: AppColors.textSecondary,
-                        size: 20,
+                      onTap: () async {
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const NotificationsScreen(),
+                          ),
+                        );
+                        _loadProfile();
+                      },
+                      child: Stack(
+                        children: [
+                          const Icon(
+                            Icons.notifications_outlined,
+                            color: AppColors.textSecondary,
+                            size: 24,
+                          ),
+                          if (_unreadNotifications > 0)
+                            Positioned(
+                              right: 0,
+                              top: 0,
+                              child: Container(
+                                width: 8,
+                                height: 8,
+                                decoration: const BoxDecoration(
+                                  color: Colors.redAccent,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
                     ),
                   const SizedBox(width: 8),

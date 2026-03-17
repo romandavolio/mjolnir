@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:mjolnir/models/link_request.dart';
 import 'package:mjolnir/models/user_profile.dart';
 import 'package:mjolnir/services/auth_service.dart';
+import 'package:mjolnir/services/notification_service.dart';
 
 class LinkService {
   static final _db = FirebaseFirestore.instance;
@@ -20,10 +21,11 @@ class LinkService {
       alumnoName: alumno.name,
       status: 'pending',
     );
-    await _db
-        .collection('solicitudes')
-        .doc(id)
-        .set(request.toJson());
+    await _db.collection('solicitudes').doc(id).set(request.toJson());
+    await NotificationService.sendLinkRequestNotification(
+      alumnoId: alumno.uid,
+      trainerName: trainer.name,
+    );
   }
 
   // Solicitudes recibidas por el alumno
@@ -35,9 +37,7 @@ class LinkService {
         .where('alumnoId', isEqualTo: uid)
         .where('status', isEqualTo: 'pending')
         .get();
-    return snapshot.docs
-        .map((d) => LinkRequest.fromJson(d.data()))
-        .toList();
+    return snapshot.docs.map((d) => LinkRequest.fromJson(d.data())).toList();
   }
 
   // Aceptar o rechazar solicitud
@@ -59,8 +59,7 @@ class LinkService {
 
     final List<UserProfile> alumnos = [];
     for (final req in requests) {
-      final doc =
-          await _db.collection('usuarios').doc(req.alumnoId).get();
+      final doc = await _db.collection('usuarios').doc(req.alumnoId).get();
       if (doc.exists) alumnos.add(UserProfile.fromJson(doc.data()!));
     }
     return alumnos;
