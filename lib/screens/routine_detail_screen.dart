@@ -272,7 +272,7 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
                   weight: newWeight,
                   rutinaId: widget.routine.id,
                 );
-                await StorageService.addWeightEntry(exerciseName, newWeight);
+                await RoutineService.addWeightEntry(exerciseName, newWeight);
               }
               Navigator.pop(context);
             },

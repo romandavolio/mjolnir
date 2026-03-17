@@ -6,6 +6,7 @@ import 'package:mjolnir/models/user_profile.dart';
 import 'package:mjolnir/screens/routine_detail_screen.dart';
 import 'package:mjolnir/services/auth_service.dart';
 import 'package:mjolnir/services/routine_service.dart';
+import 'package:mjolnir/screens/progress_screen.dart';
 
 class AlumnoDetailScreen extends StatefulWidget {
   final UserProfile alumno;
@@ -388,6 +389,53 @@ class _AlumnoDetailScreenState extends State<AlumnoDetailScreen> {
                     ),
                     const SizedBox(height: 24),
                   ],
+                  const SizedBox(height: 16),
+                  GestureDetector(
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ProgressScreen(
+                          viewAsUid: widget.alumno.uid,
+                          title:
+                              'Progreso de ${widget.alumno.name.split(' ').first}',
+                        ),
+                      ),
+                    ),
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 14,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.surface,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: AppColors.secondary.withValues(alpha: 0.4),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.show_chart,
+                            color: AppColors.secondary,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 12),
+                          Text(
+                            'Ver progreso del alumno',
+                            style: TextStyle(
+                              color: AppColors.secondary,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const Spacer(),
+                          Icon(Icons.chevron_right, color: AppColors.secondary),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
                   const Text(
                     'RUTINAS ASIGNADAS',
                     style: TextStyle(

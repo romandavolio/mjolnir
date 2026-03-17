@@ -3,13 +3,19 @@ import 'package:flutter/material.dart';
 import 'package:mjolnir/core/app_colors.dart';
 import 'package:mjolnir/models/exercise.dart';
 import 'package:mjolnir/models/weight_entry.dart';
-import 'package:mjolnir/services/storage_service.dart';
+import 'package:mjolnir/services/auth_service.dart';
 import 'package:mjolnir/services/routine_service.dart';
+import 'package:mjolnir/services/storage_service.dart';
 
 class ProgressDetailScreen extends StatefulWidget {
   final Exercise exercise;
+  final String? viewAsUid;
 
-  const ProgressDetailScreen({super.key, required this.exercise});
+  const ProgressDetailScreen({
+    super.key,
+    required this.exercise,
+    this.viewAsUid,
+  });
 
   @override
   State<ProgressDetailScreen> createState() => _ProgressDetailScreenState();
@@ -26,9 +32,16 @@ class _ProgressDetailScreenState extends State<ProgressDetailScreen> {
   }
 
   Future<void> _loadData() async {
-    final saved =
-        await StorageService.loadWeightHistory(widget.exercise.name);
+    final uid = widget.viewAsUid ?? AuthService.currentUser?.uid;
+    if (uid == null) return;
+
     final unit = await RoutineService.loadUnit();
+    final saved = await RoutineService.loadWeightHistory(
+      widget.exercise.name,
+      uid: widget.viewAsUid,
+    );
+
+    if (!mounted) return;
     setState(() {
       history = saved;
       _unit = unit;
@@ -61,11 +74,20 @@ class _ProgressDetailScreenState extends State<ProgressDetailScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              widget.exercise.muscle.isNotEmpty ? widget.exercise.muscle : 'Sin músculo asignado',
-              style: const TextStyle(
-                  color: AppColors.textSecondary, fontSize: 13),
-            ),
+            if (widget.exercise.muscle.isNotEmpty)
+              Text(
+                widget.exercise.muscle +
+                    (widget.exercise.equipment.isNotEmpty
+                        ? ' · ${widget.exercise.equipment}'
+                        : '') +
+                    (widget.exercise.variant.isNotEmpty
+                        ? ' · ${widget.exercise.variant}'
+                        : ''),
+                style: const TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 13,
+                ),
+              ),
             const SizedBox(height: 24),
             if (history.length < 2)
               Expanded(
@@ -75,8 +97,7 @@ class _ProgressDetailScreenState extends State<ProgressDetailScreen> {
                         ? 'Todavía no hay registros.\nGuardá un peso desde Rutinas para empezar.'
                         : 'Necesitás al menos 2 registros para ver el gráfico.',
                     textAlign: TextAlign.center,
-                    style: const TextStyle(
-                        color: Colors.white60, fontSize: 15),
+                    style: const TextStyle(color: Colors.white60, fontSize: 15),
                   ),
                 ),
               )
@@ -103,7 +124,9 @@ class _ProgressDetailScreenState extends State<ProgressDetailScreen> {
                           getTitlesWidget: (value, _) => Text(
                             '${value.toInt()} $_unit',
                             style: const TextStyle(
-                                color: Colors.white60, fontSize: 10),
+                              color: Colors.white60,
+                              fontSize: 10,
+                            ),
                           ),
                         ),
                       ),
@@ -116,15 +139,19 @@ class _ProgressDetailScreenState extends State<ProgressDetailScreen> {
                             child: Text(
                               _formatDate(value.toInt()),
                               style: const TextStyle(
-                                  color: Colors.white60, fontSize: 10),
+                                color: Colors.white60,
+                                fontSize: 10,
+                              ),
                             ),
                           ),
                         ),
                       ),
                       rightTitles: AxisTitles(
-                          sideTitles: SideTitles(showTitles: false)),
+                        sideTitles: SideTitles(showTitles: false),
+                      ),
                       topTitles: AxisTitles(
-                          sideTitles: SideTitles(showTitles: false)),
+                        sideTitles: SideTitles(showTitles: false),
+                      ),
                     ),
                     lineBarsData: [
                       LineChartBarData(
@@ -138,11 +165,11 @@ class _ProgressDetailScreenState extends State<ProgressDetailScreen> {
                           show: true,
                           getDotPainter: (_, __, ___, ____) =>
                               FlDotCirclePainter(
-                            radius: 5,
-                            color: AppColors.primary,
-                            strokeWidth: 2,
-                            strokeColor: Colors.white,
-                          ),
+                                radius: 5,
+                                color: AppColors.primary,
+                                strokeWidth: 2,
+                                strokeColor: Colors.white,
+                              ),
                         ),
                         belowBarData: BarAreaData(
                           show: true,

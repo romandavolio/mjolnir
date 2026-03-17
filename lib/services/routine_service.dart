@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:mjolnir/models/assigned_routine.dart';
 import 'package:mjolnir/models/routine.dart';
+import 'package:mjolnir/models/weight_entry.dart';
 import 'package:mjolnir/services/auth_service.dart';
 import 'package:mjolnir/models/routine_exercise.dart';
 
@@ -165,5 +166,38 @@ class RoutineService {
     final doc = await _db.collection('usuarios').doc(uid).get();
     if (!doc.exists) return 'kg';
     return doc.data()?['weightUnit'] ?? 'kg';
+  }
+
+  static Future<void> addWeightEntry(String exerciseName, double weight) async {
+    final uid = AuthService.currentUser?.uid;
+    if (uid == null) return;
+    await _db.collection('historial').add({
+      'uid': uid,
+      'exerciseName': exerciseName,
+      'weight': weight,
+      'date': DateTime.now().toIso8601String(),
+    });
+  }
+
+  static Future<List<WeightEntry>> loadWeightHistory(
+    String exerciseName, {
+    String? uid,
+  }) async {
+    final userId = uid ?? AuthService.currentUser?.uid;
+    if (userId == null) return [];
+    final snapshot = await _db
+        .collection('historial')
+        .where('uid', isEqualTo: userId)
+        .where('exerciseName', isEqualTo: exerciseName)
+        .orderBy('date')
+        .get();
+    return snapshot.docs
+        .map(
+          (d) => WeightEntry(
+            date: DateTime.parse(d.data()['date']),
+            weight: (d.data()['weight'] as num).toDouble(),
+          ),
+        )
+        .toList();
   }
 }
