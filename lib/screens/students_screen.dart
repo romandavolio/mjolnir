@@ -4,6 +4,7 @@ import 'package:mjolnir/models/user_profile.dart';
 import 'package:mjolnir/services/auth_service.dart';
 import 'package:mjolnir/services/link_service.dart';
 import 'package:mjolnir/services/user_service.dart';
+import 'package:mjolnir/screens/alumno_detail_screen.dart';
 
 class StudentsScreen extends StatefulWidget {
   const StudentsScreen({super.key});
@@ -28,8 +29,9 @@ class _StudentsScreenState extends State<StudentsScreen> {
 
   Future<void> _loadData() async {
     final profile = await UserService.getCurrentProfile();
-    final alumnos =
-        await LinkService.getLinkedAlumnos(AuthService.currentUser!.uid);
+    final alumnos = await LinkService.getLinkedAlumnos(
+      AuthService.currentUser!.uid,
+    );
     setState(() {
       _trainerProfile = profile;
       _linkedAlumnos = alumnos;
@@ -45,8 +47,7 @@ class _StudentsScreenState extends State<StudentsScreen> {
     setState(() => _searching = true);
     final results = await UserService.searchUsers(query);
     setState(() {
-      _searchResults =
-          results.where((u) => u.role == 'alumno').toList();
+      _searchResults = results.where((u) => u.role == 'alumno').toList();
       _searching = false;
     });
   }
@@ -63,16 +64,14 @@ class _StudentsScreenState extends State<StudentsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-              content: Text('Ya existe una solicitud para este alumno')),
+            content: Text('Ya existe una solicitud para este alumno'),
+          ),
         );
       }
       return;
     }
 
-    await LinkService.sendRequest(
-      trainer: _trainerProfile!,
-      alumno: alumno,
-    );
+    await LinkService.sendRequest(trainer: _trainerProfile!, alumno: alumno);
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -97,7 +96,8 @@ class _StudentsScreenState extends State<StudentsScreen> {
       ),
       body: _loading
           ? const Center(
-              child: CircularProgressIndicator(color: AppColors.primary))
+              child: CircularProgressIndicator(color: AppColors.primary),
+            )
           : Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -110,10 +110,13 @@ class _StudentsScreenState extends State<StudentsScreen> {
                     onChanged: _search,
                     decoration: InputDecoration(
                       hintText: 'Buscar alumno por nombre...',
-                      hintStyle:
-                          const TextStyle(color: AppColors.textSecondary),
-                      prefixIcon: const Icon(Icons.search,
-                          color: AppColors.textSecondary),
+                      hintStyle: const TextStyle(
+                        color: AppColors.textSecondary,
+                      ),
+                      prefixIcon: const Icon(
+                        Icons.search,
+                        color: AppColors.textSecondary,
+                      ),
                       suffixIcon: _searching
                           ? const SizedBox(
                               width: 20,
@@ -121,14 +124,16 @@ class _StudentsScreenState extends State<StudentsScreen> {
                               child: Padding(
                                 padding: EdgeInsets.all(12),
                                 child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: AppColors.primary),
+                                  strokeWidth: 2,
+                                  color: AppColors.primary,
+                                ),
                               ),
                             )
                           : null,
                       enabledBorder: OutlineInputBorder(
                         borderSide: BorderSide(
-                            color: AppColors.primary.withValues(alpha: 0.4)),
+                          color: AppColors.primary.withValues(alpha: 0.4),
+                        ),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       focusedBorder: OutlineInputBorder(
@@ -141,83 +146,109 @@ class _StudentsScreenState extends State<StudentsScreen> {
                   // Resultados de búsqueda
                   if (_searchResults.isNotEmpty) ...[
                     const SizedBox(height: 12),
-                    const Text('RESULTADOS',
-                        style: TextStyle(
-                            color: AppColors.textSecondary,
-                            fontSize: 11,
-                            letterSpacing: 1.5)),
+                    const Text(
+                      'RESULTADOS',
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 11,
+                        letterSpacing: 1.5,
+                      ),
+                    ),
                     const SizedBox(height: 8),
-                    ..._searchResults.map((alumno) => Container(
-                          margin: const EdgeInsets.only(bottom: 8),
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 12),
-                          decoration: BoxDecoration(
-                            color: AppColors.surface,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                                color:
-                                    AppColors.primary.withValues(alpha: 0.2)),
+                    ..._searchResults.map(
+                      (alumno) => Container(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.surface,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: AppColors.primary.withValues(alpha: 0.2),
                           ),
-                          child: Row(
-                            children: [
-                              CircleAvatar(
-                                backgroundColor:
-                                    AppColors.primary.withValues(alpha: 0.2),
-                                child: Text(
-                                  alumno.name[0].toUpperCase(),
-                                  style:
-                                      TextStyle(color: AppColors.primary),
-                                ),
+                        ),
+                        child: Row(
+                          children: [
+                            CircleAvatar(
+                              backgroundColor: AppColors.primary.withValues(
+                                alpha: 0.2,
                               ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.start,
-                                  children: [
-                                    Text(alumno.name,
-                                        style: const TextStyle(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.bold)),
-                                    Text(alumno.email,
-                                        style: const TextStyle(
-                                            color: AppColors.textSecondary,
-                                            fontSize: 12)),
-                                  ],
-                                ),
+                              child: Text(
+                                alumno.name[0].toUpperCase(),
+                                style: TextStyle(color: AppColors.primary),
                               ),
-                              GestureDetector(
-                                onTap: () => _sendRequest(alumno),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 12, vertical: 6),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.primary
-                                        .withValues(alpha: 0.15),
-                                    borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(
-                                        color: AppColors.primary),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    alumno.name,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
-                                  child: Text('Vincular',
-                                      style: TextStyle(
-                                          color: AppColors.primary,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 12)),
+                                  Text(
+                                    alumno.email,
+                                    style: const TextStyle(
+                                      color: AppColors.textSecondary,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            GestureDetector(
+                              onTap: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                      AlumnoDetailScreen(alumno: alumno),
                                 ),
                               ),
-                            ],
-                          ),
-                        )),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: AppColors.primary.withValues(
+                                    alpha: 0.15,
+                                  ),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: AppColors.primary),
+                                ),
+                                child: Text(
+                                  'Vincular',
+                                  style: TextStyle(
+                                    color: AppColors.primary,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   ],
 
                   const SizedBox(height: 20),
 
                   // Alumnos vinculados
-                  const Text('MIS ALUMNOS',
-                      style: TextStyle(
-                          color: AppColors.textSecondary,
-                          fontSize: 11,
-                          letterSpacing: 1.5)),
+                  const Text(
+                    'MIS ALUMNOS',
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 11,
+                      letterSpacing: 1.5,
+                    ),
+                  ),
                   const SizedBox(height: 12),
                   Expanded(
                     child: _linkedAlumnos.isEmpty
@@ -226,7 +257,9 @@ class _StudentsScreenState extends State<StudentsScreen> {
                               'No tenés alumnos vinculados todavía.\nBuscá un alumno para enviarle una solicitud.',
                               textAlign: TextAlign.center,
                               style: TextStyle(
-                                  color: Colors.white60, fontSize: 15),
+                                color: Colors.white60,
+                                fontSize: 15,
+                              ),
                             ),
                           )
                         : ListView.builder(
@@ -236,13 +269,17 @@ class _StudentsScreenState extends State<StudentsScreen> {
                               return Container(
                                 margin: const EdgeInsets.only(bottom: 12),
                                 padding: const EdgeInsets.symmetric(
-                                    horizontal: 16, vertical: 14),
+                                  horizontal: 16,
+                                  vertical: 14,
+                                ),
                                 decoration: BoxDecoration(
                                   color: AppColors.surface,
                                   borderRadius: BorderRadius.circular(14),
                                   border: Border.all(
-                                      color: AppColors.primary
-                                          .withValues(alpha: 0.25)),
+                                    color: AppColors.primary.withValues(
+                                      alpha: 0.25,
+                                    ),
+                                  ),
                                 ),
                                 child: Row(
                                   children: [
@@ -252,8 +289,9 @@ class _StudentsScreenState extends State<StudentsScreen> {
                                       child: Text(
                                         alumno.name[0].toUpperCase(),
                                         style: TextStyle(
-                                            color: AppColors.primary,
-                                            fontWeight: FontWeight.bold),
+                                          color: AppColors.primary,
+                                          fontWeight: FontWeight.bold,
+                                        ),
                                       ),
                                     ),
                                     const SizedBox(width: 12),
@@ -262,21 +300,27 @@ class _StudentsScreenState extends State<StudentsScreen> {
                                         crossAxisAlignment:
                                             CrossAxisAlignment.start,
                                         children: [
-                                          Text(alumno.name,
-                                              style: const TextStyle(
-                                                  color: Colors.white,
-                                                  fontWeight:
-                                                      FontWeight.bold)),
-                                          Text(alumno.email,
-                                              style: const TextStyle(
-                                                  color:
-                                                      AppColors.textSecondary,
-                                                  fontSize: 12)),
+                                          Text(
+                                            alumno.name,
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                          Text(
+                                            alumno.email,
+                                            style: const TextStyle(
+                                              color: AppColors.textSecondary,
+                                              fontSize: 12,
+                                            ),
+                                          ),
                                         ],
                                       ),
                                     ),
-                                    const Icon(Icons.chevron_right,
-                                        color: AppColors.textSecondary),
+                                    const Icon(
+                                      Icons.chevron_right,
+                                      color: AppColors.textSecondary,
+                                    ),
                                   ],
                                 ),
                               );
