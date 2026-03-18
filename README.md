@@ -11,12 +11,15 @@ Permite a trainers y alumnos gestionar ejercicios, rutinas y registrar el progre
 ### Autenticación y perfiles
 - Registro e inicio de sesión con email y contraseña
 - Perfiles diferenciados: trainer y alumno
+- Datos personales: fecha de nacimiento, altura, peso, objetivo, nivel de experiencia y lesiones
 - Vinculación trainer-alumno mediante solicitudes
+- Notificaciones push para solicitudes de vinculación pendientes
 
 ### Trainer
 - Gestión de alumnos vinculados
+- Visualización de datos personales del alumno
 - Asignación de rutinas a alumnos
-- Visualización de pesos registrados por el alumno
+- Visualización de pesos y progreso registrados por el alumno
 - Edición de rutinas asignadas
 - Eliminación de rutinas sin pesos cargados
 
@@ -31,30 +34,30 @@ Permite a trainers y alumnos gestionar ejercicios, rutinas y registrar el progre
 - Rutinas con series de repeticiones personalizadas por ejercicio
 - Registro de peso individual por serie
 
-### Progreso
+### Progreso y estadísticas
 - Historial de progreso con gráfico de evolución por ejercicio
+- Récords personales por ejercicio
+- Progreso mensual comparativo
 
 ### Configuración
 - Unidad de peso configurable (kg / lb) sincronizada en la nube
+- Edición de perfil personal
 
 ## Tecnologías
 
 - [Flutter](https://flutter.dev/) / Dart
 - Firebase Auth — autenticación
-- Cloud Firestore — base de datos en la nube
+- Cloud Firestore — base de datos en la nube con reglas de seguridad
+- Firebase Cloud Messaging — notificaciones push
 - shared_preferences — preferencias locales del dispositivo
 - fl_chart — gráficos de progreso
 - Arquitectura por capas: models, screens, components, services, core
 
 ## En desarrollo
 
-- Foto de perfil de usuario
-- Notificaciones push para solicitudes de vinculación
-- Historial de pesos del alumno visible para el trainer
-- Múltiples trainers por alumno
+- Historial de peso corporal del usuario
 - Plantillas de rutinas predefinidas por grupo muscular
-- Estadísticas generales de progreso (volumen total, récords personales)
-- Modo offline con sincronización automática al reconectarse
+- Múltiples trainers por alumno
 
 ## Capturas
 
