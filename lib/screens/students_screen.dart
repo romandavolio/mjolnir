@@ -32,6 +32,7 @@ class _StudentsScreenState extends State<StudentsScreen> {
     final alumnos = await LinkService.getLinkedAlumnos(
       AuthService.currentUser!.uid,
     );
+    if (!mounted) return;
     setState(() {
       _trainerProfile = profile;
       _linkedAlumnos = alumnos;

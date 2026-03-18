@@ -5,7 +5,6 @@ import 'package:mjolnir/models/exercise.dart';
 import 'package:mjolnir/models/weight_entry.dart';
 import 'package:mjolnir/services/auth_service.dart';
 import 'package:mjolnir/services/routine_service.dart';
-import 'package:mjolnir/services/storage_service.dart';
 
 class ProgressDetailScreen extends StatefulWidget {
   final Exercise exercise;
