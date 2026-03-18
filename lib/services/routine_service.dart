@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:mjolnir/models/assigned_routine.dart';
+import 'package:mjolnir/models/exercise.dart';
 import 'package:mjolnir/models/routine.dart';
 import 'package:mjolnir/models/weight_entry.dart';
 import 'package:mjolnir/services/auth_service.dart';
@@ -199,5 +200,44 @@ class RoutineService {
           ),
         )
         .toList();
+  }
+
+  static Future<void> saveExercises(List<Exercise> exercises) async {
+    final uid = AuthService.currentUser?.uid;
+    if (uid == null) return;
+    final batch = _db.batch();
+
+    // Primero eliminamos todos los ejercicios existentes
+    final existing = await _db
+        .collection('usuarios')
+        .doc(uid)
+        .collection('ejercicios')
+        .get();
+    for (final doc in existing.docs) {
+      batch.delete(doc.reference);
+    }
+
+    // Luego guardamos los nuevos
+    for (final exercise in exercises) {
+      final ref = _db
+          .collection('usuarios')
+          .doc(uid)
+          .collection('ejercicios')
+          .doc(exercise.name);
+      batch.set(ref, exercise.toJson());
+    }
+
+    await batch.commit();
+  }
+
+  static Future<List<Exercise>> loadExercises() async {
+    final uid = AuthService.currentUser?.uid;
+    if (uid == null) return [];
+    final snapshot = await _db
+        .collection('usuarios')
+        .doc(uid)
+        .collection('ejercicios')
+        .get();
+    return snapshot.docs.map((d) => Exercise.fromJson(d.data())).toList();
   }
 }

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mjolnir/core/app_colors.dart';
 import 'package:mjolnir/core/muscle_data.dart';
 import 'package:mjolnir/models/exercise.dart';
-import 'package:mjolnir/services/storage_service.dart';
+import 'package:mjolnir/services/routine_service.dart';
 
 class ExerciseScreen extends StatefulWidget {
   const ExerciseScreen({super.key});
@@ -22,7 +22,7 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
   }
 
   Future<void> _loadExercises() async {
-    final saved = await StorageService.loadExercises();
+    final saved = await RoutineService.loadExercises();
     setState(() => exercises = saved);
   }
 
@@ -177,7 +177,7 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
                   }
                 });
 
-                await StorageService.saveExercises(exercises);
+                await RoutineService.saveExercises(exercises);
                 Navigator.pop(context);
               },
               child: Text('Guardar',
@@ -250,7 +250,7 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
           TextButton(
             onPressed: () async {
               setState(() => exercises.removeAt(index));
-              await StorageService.saveExercises(exercises);
+              await RoutineService.saveExercises(exercises);
               Navigator.pop(context);
             },
             child: const Text('Eliminar',

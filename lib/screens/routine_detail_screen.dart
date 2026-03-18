@@ -5,7 +5,6 @@ import 'package:mjolnir/models/exercise.dart';
 import 'package:mjolnir/models/routine.dart';
 import 'package:mjolnir/models/routine_exercise.dart';
 import 'package:mjolnir/models/serie.dart';
-import 'package:mjolnir/services/storage_service.dart';
 import 'package:mjolnir/services/routine_service.dart';
 
 class RoutineDetailScreen extends StatefulWidget {
@@ -38,7 +37,7 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
 
   Future<void> _loadData() async {
     final unit = await RoutineService.loadUnit();
-    final catalog = await StorageService.loadExercises();
+    final catalog = await RoutineService.loadExercises();
 
     for (final routineExercise in widget.routine.exercises) {
       for (int i = 0; i < routineExercise.series.length; i++) {
@@ -757,7 +756,7 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
                   variant: selectedVariant ?? '',
                 );
                 _catalogExercises.add(exercise);
-                await StorageService.saveExercises(_catalogExercises);
+                await RoutineService.saveExercises(_catalogExercises);
                 Navigator.pop(context);
                 _showSeriesForm(null, exercise);
               },
