@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mjolnir/core/app_colors.dart';
 import 'package:mjolnir/models/exercise.dart';
 import 'package:mjolnir/screens/progress_detail_screen.dart';
+import 'package:mjolnir/services/stats_service.dart';
 import 'package:mjolnir/services/storage_service.dart';
 
 class ProgressScreen extends StatefulWidget {
@@ -18,19 +19,41 @@ class ProgressScreen extends StatefulWidget {
   State<ProgressScreen> createState() => _ProgressScreenState();
 }
 
-class _ProgressScreenState extends State<ProgressScreen> {
+class _ProgressScreenState extends State<ProgressScreen>
+    with SingleTickerProviderStateMixin {
   List<Exercise> exercises = [];
+  Map<String, double> _records = {};
+  Map<String, Map<String, double>> _monthlyProgress = {};
+  bool _loading = true;
+  late TabController _tabController;
 
   @override
   void initState() {
     super.initState();
-    _loadExercises();
+    _tabController = TabController(length: 2, vsync: this);
+    _loadData();
   }
 
-  Future<void> _loadExercises() async {
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadData() async {
     final saved = await StorageService.loadExercises();
+    final records = await StatsService.getPersonalRecords(
+        uid: widget.viewAsUid);
+    final monthly = await StatsService.getMonthlyProgress(
+        uid: widget.viewAsUid);
+
     if (!mounted) return;
-    setState(() => exercises = saved);
+    setState(() {
+      exercises = saved;
+      _records = records;
+      _monthlyProgress = monthly;
+      _loading = false;
+    });
   }
 
   @override
@@ -41,83 +64,264 @@ class _ProgressScreenState extends State<ProgressScreen> {
         title: Text(widget.title ?? 'Progreso'),
         backgroundColor: AppColors.backgroundAppBar,
         foregroundColor: AppColors.primary,
+        bottom: TabBar(
+          controller: _tabController,
+          indicatorColor: AppColors.primary,
+          labelColor: AppColors.primary,
+          unselectedLabelColor: AppColors.textSecondary,
+          tabs: const [
+            Tab(text: 'EJERCICIOS'),
+            Tab(text: 'ESTADÍSTICAS'),
+          ],
+        ),
       ),
-      body: exercises.isEmpty
+      body: _loading
           ? const Center(
-              child: Text(
-                'No hay ejercicios todavía.\nCreá uno desde la pantalla Ejercicios.',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.white60, fontSize: 15),
+              child: CircularProgressIndicator(color: AppColors.primary))
+          : TabBarView(
+              controller: _tabController,
+              children: [
+                _buildExerciseList(),
+                _buildStats(),
+              ],
+            ),
+    );
+  }
+
+  Widget _buildExerciseList() {
+    if (exercises.isEmpty) {
+      return const Center(
+        child: Text(
+          'No hay ejercicios todavía.\nCreá uno desde la pantalla Ejercicios.',
+          textAlign: TextAlign.center,
+          style: TextStyle(color: Colors.white60, fontSize: 15),
+        ),
+      );
+    }
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: exercises.length,
+      itemBuilder: (context, index) {
+        final exercise = exercises[index];
+        return GestureDetector(
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => ProgressDetailScreen(
+                exercise: exercise,
+                viewAsUid: widget.viewAsUid,
               ),
-            )
-          : ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: exercises.length,
-              itemBuilder: (context, index) {
-                final exercise = exercises[index];
-                return GestureDetector(
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => ProgressDetailScreen(
-                        exercise: exercise,
-                        viewAsUid: widget.viewAsUid,
-                      ),
+            ),
+          ),
+          child: Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: AppColors.primary.withValues(alpha: 0.25),
+                width: 1.5,
+              ),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: AppColors.primary.withValues(alpha: 0.3),
                     ),
                   ),
-                  child: Container(
-                    margin: const EdgeInsets.only(bottom: 12),
+                  child: const Icon(Icons.show_chart,
+                      color: AppColors.primary, size: 20),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(exercise.name,
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold)),
+                      if (exercise.muscle.isNotEmpty)
+                        Text(exercise.muscle,
+                            style: const TextStyle(
+                                color: AppColors.textSecondary,
+                                fontSize: 12)),
+                    ],
+                  ),
+                ),
+                if (_records.containsKey(exercise.name))
+                  Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 20, vertical: 18),
+                        horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: AppColors.surface,
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(
-                        color: AppColors.primary.withValues(alpha: 0.25),
-                        width: 1.5,
-                      ),
+                      color: AppColors.primary.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Row(
+                    child: Text(
+                      'PR ${_records[exercise.name]!.toInt()} kg',
+                      style: TextStyle(
+                          color: AppColors.primary,
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                const SizedBox(width: 8),
+                const Icon(Icons.chevron_right,
+                    color: AppColors.textSecondary),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildStats() {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        // Récords personales
+        if (_records.isNotEmpty) ...[
+          _sectionLabel('RÉCORDS PERSONALES'),
+          const SizedBox(height: 12),
+          ..._records.entries.map((entry) => Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                      color: AppColors.primary.withValues(alpha: 0.2)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.emoji_events,
+                        color: AppColors.primary, size: 20),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(entry.key,
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold)),
+                    ),
+                    Text(
+                      '${entry.value.toInt()} kg',
+                      style: TextStyle(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16),
+                    ),
+                  ],
+                ),
+              )),
+          const SizedBox(height: 24),
+        ],
+
+        // Progreso mensual
+        if (_monthlyProgress.isNotEmpty) ...[
+          _sectionLabel('PROGRESO MENSUAL'),
+          const SizedBox(height: 12),
+          ..._monthlyProgress.entries.map((entry) {
+            final diff = entry.value['diff']!;
+            final isPositive = diff >= 0;
+            return Container(
+              margin: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                    color: AppColors.primary.withValues(alpha: 0.2)),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    isPositive
+                        ? Icons.trending_up
+                        : Icons.trending_down,
+                    color: isPositive
+                        ? AppColors.secondary
+                        : Colors.redAccent,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Container(
-                          width: 40,
-                          height: 40,
-                          decoration: BoxDecoration(
-                            color: AppColors.primary.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(
-                              color: AppColors.primary.withValues(alpha: 0.3),
-                            ),
-                          ),
-                          child: const Icon(Icons.show_chart,
-                              color: AppColors.primary, size: 20),
+                        Text(entry.key,
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold)),
+                        Text(
+                          'Mes anterior: ${entry.value['lastMonth']!.toStringAsFixed(1)} kg',
+                          style: const TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: 12),
                         ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(exercise.name,
-                                  style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.bold)),
-                              if (exercise.muscle.isNotEmpty)
-                                Text(exercise.muscle,
-                                    style: const TextStyle(
-                                        color: AppColors.textSecondary,
-                                        fontSize: 12)),
-                            ],
-                          ),
-                        ),
-                        const Icon(Icons.chevron_right,
-                            color: AppColors.textSecondary),
                       ],
                     ),
                   ),
-                );
-              },
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        '${entry.value['thisMonth']!.toStringAsFixed(1)} kg',
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold),
+                      ),
+                      Text(
+                        '${isPositive ? '+' : ''}${diff.toStringAsFixed(1)} kg',
+                        style: TextStyle(
+                            color: isPositive
+                                ? AppColors.secondary
+                                : Colors.redAccent,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          }),
+          const SizedBox(height: 24),
+        ],
+
+        if (_records.isEmpty &&
+            _monthlyProgress.isEmpty)
+          const Center(
+            child: Padding(
+              padding: EdgeInsets.only(top: 60),
+              child: Text(
+                'Todavía no hay estadísticas.\nEmpezá a registrar pesos en tus rutinas.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.white60, fontSize: 15),
+              ),
             ),
+          ),
+      ],
     );
+  }
+
+  Widget _sectionLabel(String label) {
+    return Text(label,
+        style: const TextStyle(
+            color: AppColors.textSecondary,
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 1.5));
   }
 }
