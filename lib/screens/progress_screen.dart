@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:mjolnir/core/app_colors.dart';
 import 'package:mjolnir/models/exercise.dart';
 import 'package:mjolnir/screens/progress_detail_screen.dart';
+import 'package:mjolnir/services/routine_service.dart';
 import 'package:mjolnir/services/stats_service.dart';
-import 'package:mjolnir/services/storage_service.dart';
 
 class ProgressScreen extends StatefulWidget {
   final String? viewAsUid;
@@ -41,7 +41,7 @@ class _ProgressScreenState extends State<ProgressScreen>
   }
 
   Future<void> _loadData() async {
-    final saved = await StorageService.loadExercises();
+    final saved = await RoutineService.loadExercises();
     final records = await StatsService.getPersonalRecords(
         uid: widget.viewAsUid);
     final monthly = await StatsService.getMonthlyProgress(
