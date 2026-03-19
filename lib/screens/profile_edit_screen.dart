@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:mjolnir/core/app_colors.dart';
 import 'package:mjolnir/models/user_profile.dart';
 import 'package:mjolnir/services/auth_service.dart';
+import 'package:mjolnir/screens/body_weight_screen.dart';
 
 class ProfileEditScreen extends StatefulWidget {
   final UserProfile profile;
@@ -101,8 +102,10 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
     required Function(double) onSelected,
   }) {
     double tempValue = initialValue;
-    final initialIndex =
-        (initialValue - minValue).toInt().clamp(0, maxValue - minValue);
+    final initialIndex = (initialValue - minValue).toInt().clamp(
+      0,
+      maxValue - minValue,
+    );
 
     showModalBottomSheet(
       context: context,
@@ -114,31 +117,38 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Padding(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: const Text('Cancelar',
-                      style: TextStyle(color: Colors.white60)),
+                  child: const Text(
+                    'Cancelar',
+                    style: TextStyle(color: Colors.white60),
+                  ),
                 ),
-                Text(title.toUpperCase(),
-                    style: const TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 11,
-                        letterSpacing: 1.5,
-                        fontWeight: FontWeight.w600)),
+                Text(
+                  title.toUpperCase(),
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 11,
+                    letterSpacing: 1.5,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
                 TextButton(
                   onPressed: () {
                     onSelected(tempValue);
                     Navigator.pop(context);
                   },
-                  child: Text('Listo',
-                      style: TextStyle(
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.bold)),
+                  child: Text(
+                    'Listo',
+                    style: TextStyle(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -147,7 +157,8 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
             height: 200,
             child: CupertinoPicker(
               scrollController: FixedExtentScrollController(
-                  initialItem: initialIndex),
+                initialItem: initialIndex,
+              ),
               itemExtent: 40,
               onSelectedItemChanged: (index) {
                 tempValue = (minValue + index).toDouble();
@@ -155,9 +166,10 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
               children: List.generate(
                 maxValue - minValue + 1,
                 (i) => Center(
-                  child: Text('${minValue + i} $suffix',
-                      style: const TextStyle(
-                          color: Colors.white, fontSize: 20)),
+                  child: Text(
+                    '${minValue + i} $suffix',
+                    style: const TextStyle(color: Colors.white, fontSize: 20),
+                  ),
                 ),
               ),
             ),
@@ -184,11 +196,17 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                     height: 18,
                     width: 18,
                     child: CircularProgressIndicator(
-                        strokeWidth: 2, color: Colors.black))
-                : Text('Guardar',
+                      strokeWidth: 2,
+                      color: Colors.black,
+                    ),
+                  )
+                : Text(
+                    'Guardar',
                     style: TextStyle(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.bold)),
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
           ),
         ],
       ),
@@ -205,11 +223,11 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
               style: const TextStyle(color: Colors.white),
               decoration: InputDecoration(
                 labelText: 'Nombre completo',
-                labelStyle:
-                    TextStyle(color: AppColors.textSecondary),
+                labelStyle: TextStyle(color: AppColors.textSecondary),
                 enabledBorder: OutlineInputBorder(
                   borderSide: BorderSide(
-                      color: AppColors.primary.withValues(alpha: 0.4)),
+                    color: AppColors.primary.withValues(alpha: 0.4),
+                  ),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 focusedBorder: OutlineInputBorder(
@@ -235,8 +253,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                       suffix: 'cm',
                       onSelected: (v) => setState(() => _height = v),
                     ),
-                    child: _buildPickerField(
-                        'Altura', '${_height.toInt()} cm'),
+                    child: _buildPickerField('Altura', '${_height.toInt()} cm'),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -267,7 +284,9 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                       onSelected: (v) => setState(() => _weight = v),
                     ),
                     child: _buildPickerField(
-                        'Peso actual', '${_weight.toInt()} kg'),
+                      'Peso actual',
+                      '${_weight.toInt()} kg',
+                    ),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -279,11 +298,12 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                       minValue: 30,
                       maxValue: 200,
                       suffix: 'kg',
-                      onSelected: (v) =>
-                          setState(() => _targetWeight = v),
+                      onSelected: (v) => setState(() => _targetWeight = v),
                     ),
                     child: _buildPickerField(
-                        'Peso objetivo', '${_targetWeight.toInt()} kg'),
+                      'Peso objetivo',
+                      '${_targetWeight.toInt()} kg',
+                    ),
                   ),
                 ),
               ],
@@ -301,9 +321,9 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                     onTap: () => setState(() => _selectedSex = sex),
                     child: Container(
                       margin: EdgeInsets.only(
-                          right: sex == _sexOptions.first ? 12 : 0),
-                      padding:
-                          const EdgeInsets.symmetric(vertical: 14),
+                        right: sex == _sexOptions.first ? 12 : 0,
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
                       decoration: BoxDecoration(
                         color: isSelected
                             ? AppColors.primary.withValues(alpha: 0.12)
@@ -317,13 +337,15 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                         ),
                       ),
                       child: Center(
-                        child: Text(sex,
-                            style: TextStyle(
-                              color: isSelected
-                                  ? AppColors.primary
-                                  : AppColors.textSecondary,
-                              fontWeight: FontWeight.bold,
-                            )),
+                        child: Text(
+                          sex,
+                          style: TextStyle(
+                            color: isSelected
+                                ? AppColors.primary
+                                : AppColors.textSecondary,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ),
                     ),
                   ),
@@ -373,16 +395,56 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
               maxLines: 3,
               decoration: InputDecoration(
                 hintText: 'Ej: Dolor lumbar, rodilla derecha...',
-                hintStyle:
-                    const TextStyle(color: AppColors.textSecondary),
+                hintStyle: const TextStyle(color: AppColors.textSecondary),
                 enabledBorder: OutlineInputBorder(
                   borderSide: BorderSide(
-                      color: AppColors.primary.withValues(alpha: 0.4)),
+                    color: AppColors.primary.withValues(alpha: 0.4),
+                  ),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderSide: BorderSide(color: AppColors.primary),
                   borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            GestureDetector(
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const BodyWeightScreen()),
+              ),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: AppColors.primary.withValues(alpha: 0.25),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.monitor_weight_outlined,
+                      color: AppColors.primary,
+                    ),
+                    const SizedBox(width: 12),
+                    const Expanded(
+                      child: Text(
+                        'Historial de peso corporal',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    const Icon(
+                      Icons.chevron_right,
+                      color: AppColors.textSecondary,
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -394,12 +456,15 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
   }
 
   Widget _sectionLabel(String label) {
-    return Text(label,
-        style: const TextStyle(
-            color: AppColors.textSecondary,
-            fontSize: 11,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 1.5));
+    return Text(
+      label,
+      style: const TextStyle(
+        color: AppColors.textSecondary,
+        fontSize: 11,
+        fontWeight: FontWeight.w600,
+        letterSpacing: 1.5,
+      ),
+    );
   }
 
   Widget _buildPickerField(String label, String value) {
@@ -407,21 +472,27 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-            color: AppColors.primary.withValues(alpha: 0.4)),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.4)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label,
-              style: const TextStyle(
-                  color: AppColors.textSecondary, fontSize: 11)),
+          Text(
+            label,
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 11,
+            ),
+          ),
           const SizedBox(height: 4),
-          Text(value,
-              style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold)),
+          Text(
+            value,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
         ],
       ),
     );
@@ -441,14 +512,14 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
               : AppColors.primary.withValues(alpha: 0.2),
         ),
       ),
-      child: Text(label,
-          style: TextStyle(
-            color:
-                isSelected ? AppColors.primary : AppColors.textSecondary,
-            fontSize: 13,
-            fontWeight:
-                isSelected ? FontWeight.bold : FontWeight.normal,
-          )),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: isSelected ? AppColors.primary : AppColors.textSecondary,
+          fontSize: 13,
+          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+        ),
+      ),
     );
   }
 }
