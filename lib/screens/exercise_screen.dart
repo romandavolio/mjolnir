@@ -14,6 +14,8 @@ class ExerciseScreen extends StatefulWidget {
 class _ExerciseScreenState extends State<ExerciseScreen> {
   List<Exercise> exercises = [];
   String? _selectedMuscleFilter;
+  final _searchController = TextEditingController();
+  String _searchQuery = '';
 
   @override
   void initState() {
@@ -27,21 +29,34 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
   }
 
   List<Exercise> get _filteredExercises {
-    if (_selectedMuscleFilter == null) return exercises;
-    return exercises
-        .where((e) => e.muscle == _selectedMuscleFilter)
-        .toList();
+    List<Exercise> result = exercises;
+
+    if (_selectedMuscleFilter != null) {
+      result = result.where((e) => e.muscle == _selectedMuscleFilter).toList();
+    }
+
+    if (_searchQuery.isNotEmpty) {
+      result = result
+          .where(
+            (e) => e.name.toLowerCase().contains(_searchQuery.toLowerCase()),
+          )
+          .toList();
+    }
+
+    return result;
   }
 
   void _showExerciseForm({Exercise? existing, int? index}) {
-    final nameController =
-        TextEditingController(text: existing?.name ?? '');
-    String? selectedMuscle =
-        existing?.muscle.isNotEmpty == true ? existing!.muscle : null;
-    String? selectedEquipment =
-        existing?.equipment.isNotEmpty == true ? existing!.equipment : null;
-    String? selectedVariant =
-        existing?.variant.isNotEmpty == true ? existing!.variant : null;
+    final nameController = TextEditingController(text: existing?.name ?? '');
+    String? selectedMuscle = existing?.muscle.isNotEmpty == true
+        ? existing!.muscle
+        : null;
+    String? selectedEquipment = existing?.equipment.isNotEmpty == true
+        ? existing!.equipment
+        : null;
+    String? selectedVariant = existing?.variant.isNotEmpty == true
+        ? existing!.variant
+        : null;
 
     showDialog(
       context: context,
@@ -61,22 +76,28 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
                 const SizedBox(height: 20),
 
                 // Músculo
-                const Text('MÚSCULO',
-                    style: TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 11,
-                        letterSpacing: 1.5)),
+                const Text(
+                  'MÚSCULO',
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 11,
+                    letterSpacing: 1.5,
+                  ),
+                ),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<String>(
                   value: selectedMuscle,
                   dropdownColor: AppColors.backgroundAppBar,
                   style: const TextStyle(color: Colors.white),
-                  hint: const Text('Seleccioná un músculo',
-                      style: TextStyle(color: AppColors.textSecondary)),
+                  hint: const Text(
+                    'Seleccioná un músculo',
+                    style: TextStyle(color: AppColors.textSecondary),
+                  ),
                   decoration: InputDecoration(
                     enabledBorder: OutlineInputBorder(
                       borderSide: BorderSide(
-                          color: AppColors.primary.withValues(alpha: 0.4)),
+                        color: AppColors.primary.withValues(alpha: 0.4),
+                      ),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     focusedBorder: OutlineInputBorder(
@@ -84,7 +105,9 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 8),
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
                   ),
                   items: MuscleData.muscles.map((m) {
                     return DropdownMenuItem(value: m, child: Text(m));
@@ -102,22 +125,25 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
                   const SizedBox(height: 20),
 
                   // Equipamiento
-                  const Text('EQUIPAMIENTO',
-                      style: TextStyle(
-                          color: AppColors.textSecondary,
-                          fontSize: 11,
-                          letterSpacing: 1.5)),
+                  const Text(
+                    'EQUIPAMIENTO',
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 11,
+                      letterSpacing: 1.5,
+                    ),
+                  ),
                   const SizedBox(height: 8),
                   Wrap(
                     spacing: 8,
                     runSpacing: 8,
-                    children: MuscleData.equipmentFor(selectedMuscle!)
-                        .map((item) {
+                    children: MuscleData.equipmentFor(selectedMuscle!).map((
+                      item,
+                    ) {
                       final isSelected = selectedEquipment == item;
                       return GestureDetector(
                         onTap: () => setDialogState(() {
-                          selectedEquipment =
-                              isSelected ? null : item;
+                          selectedEquipment = isSelected ? null : item;
                         }),
                         child: _buildChip(item, isSelected),
                       );
@@ -127,17 +153,21 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
                   const SizedBox(height: 20),
 
                   // Variante
-                  const Text('VARIANTE',
-                      style: TextStyle(
-                          color: AppColors.textSecondary,
-                          fontSize: 11,
-                          letterSpacing: 1.5)),
+                  const Text(
+                    'VARIANTE',
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 11,
+                      letterSpacing: 1.5,
+                    ),
+                  ),
                   const SizedBox(height: 8),
                   Wrap(
                     spacing: 8,
                     runSpacing: 8,
-                    children:
-                        MuscleData.variantsFor(selectedMuscle!).map((item) {
+                    children: MuscleData.variantsFor(selectedMuscle!).map((
+                      item,
+                    ) {
                       final isSelected = selectedVariant == item;
                       return GestureDetector(
                         onTap: () => setDialogState(() {
@@ -154,8 +184,10 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Cancelar',
-                  style: TextStyle(color: Colors.white60)),
+              child: const Text(
+                'Cancelar',
+                style: TextStyle(color: Colors.white60),
+              ),
             ),
             TextButton(
               onPressed: () async {
@@ -180,8 +212,10 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
                 await RoutineService.saveExercises(exercises);
                 Navigator.pop(context);
               },
-              child: Text('Guardar',
-                  style: TextStyle(color: AppColors.primary)),
+              child: Text(
+                'Guardar',
+                style: TextStyle(color: AppColors.primary),
+              ),
             ),
           ],
         ),
@@ -203,13 +237,14 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
               : AppColors.primary.withValues(alpha: 0.2),
         ),
       ),
-      child: Text(label,
-          style: TextStyle(
-            color: isSelected ? AppColors.primary : AppColors.textSecondary,
-            fontSize: 12,
-            fontWeight:
-                isSelected ? FontWeight.bold : FontWeight.normal,
-          )),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: isSelected ? AppColors.primary : AppColors.textSecondary,
+          fontSize: 12,
+          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+        ),
+      ),
     );
   }
 
@@ -235,8 +270,10 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: AppColors.backgroundAppBar,
-        title: const Text('Eliminar ejercicio',
-            style: TextStyle(color: Colors.white)),
+        title: const Text(
+          'Eliminar ejercicio',
+          style: TextStyle(color: Colors.white),
+        ),
         content: Text(
           '¿Seguro que querés eliminar "${exercises[index].name}"?',
           style: const TextStyle(color: Colors.white70),
@@ -244,8 +281,10 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar',
-                style: TextStyle(color: Colors.white60)),
+            child: const Text(
+              'Cancelar',
+              style: TextStyle(color: Colors.white60),
+            ),
           ),
           TextButton(
             onPressed: () async {
@@ -253,8 +292,10 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
               await RoutineService.saveExercises(exercises);
               Navigator.pop(context);
             },
-            child: const Text('Eliminar',
-                style: TextStyle(color: Colors.redAccent)),
+            child: const Text(
+              'Eliminar',
+              style: TextStyle(color: Colors.redAccent),
+            ),
           ),
         ],
       ),
@@ -272,12 +313,49 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
       ),
       body: Column(
         children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+            child: TextField(
+              controller: _searchController,
+              style: const TextStyle(color: Colors.white),
+              onChanged: (value) => setState(() => _searchQuery = value),
+              decoration: InputDecoration(
+                hintText: 'Buscar ejercicio...',
+                hintStyle: const TextStyle(color: AppColors.textSecondary),
+                prefixIcon: const Icon(
+                  Icons.search,
+                  color: AppColors.textSecondary,
+                ),
+                suffixIcon: _searchQuery.isNotEmpty
+                    ? GestureDetector(
+                        onTap: () {
+                          _searchController.clear();
+                          setState(() => _searchQuery = '');
+                        },
+                        child: const Icon(
+                          Icons.close,
+                          color: AppColors.textSecondary,
+                        ),
+                      )
+                    : null,
+                enabledBorder: OutlineInputBorder(
+                  borderSide: BorderSide(
+                    color: AppColors.primary.withValues(alpha: 0.4),
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: AppColors.primary),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ),
           SizedBox(
             height: 48,
             child: ListView(
               scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 16, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               children: [
                 _buildFilterChip('Todos', null),
                 ...MuscleData.muscles.map((m) => _buildFilterChip(m, m)),
@@ -293,70 +371,107 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
                           : 'No hay ejercicios de $_selectedMuscleFilter.',
                       textAlign: TextAlign.center,
                       style: const TextStyle(
-                          color: Colors.white60, fontSize: 15),
+                        color: Colors.white60,
+                        fontSize: 15,
+                      ),
                     ),
                   )
-                : ListView.builder(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: _filteredExercises.length,
-                    itemBuilder: (context, index) {
-                      final exercise = _filteredExercises[index];
-                      final realIndex = exercises.indexOf(exercise);
-                      return Card(
-                        color: AppColors.backgroundAppBar,
-                        margin: const EdgeInsets.only(bottom: 12),
-                        child: ListTile(
-                          title: Text(exercise.name,
+                : Theme(
+                    data: Theme.of(context).copyWith(
+                      canvasColor: Colors.transparent,
+                      shadowColor: Colors.transparent,
+                    ),
+                    child: ReorderableListView.builder(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: _filteredExercises.length,
+                      onReorder: (oldIndex, newIndex) async {
+                        setState(() {
+                          if (newIndex > oldIndex) newIndex--;
+                          final item = exercises.removeAt(oldIndex);
+                          exercises.insert(newIndex, item);
+                        });
+                        await RoutineService.saveExercises(exercises);
+                      },
+                      itemBuilder: (context, index) {
+                        final exercise = _filteredExercises[index];
+                        final realIndex = exercises.indexOf(exercise);
+                        return Card(
+                          key: ValueKey(exercise.name),
+                          color: AppColors.backgroundAppBar,
+                          margin: const EdgeInsets.only(bottom: 12),
+                          child: ListTile(
+                            leading: ReorderableDragStartListener(
+                              index: index,
+                              child: const Icon(
+                                Icons.drag_handle,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                            title: Text(
+                              exercise.name,
                               style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold)),
-                          subtitle: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              if (exercise.muscle.isNotEmpty)
-                                Text(exercise.muscle,
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                if (exercise.muscle.isNotEmpty)
+                                  Text(
+                                    exercise.muscle,
                                     style: TextStyle(
-                                        color: AppColors.primary
-                                            .withValues(alpha: 0.8),
-                                        fontSize: 12)),
-                              if (exercise.equipment.isNotEmpty ||
-                                  exercise.variant.isNotEmpty)
-                                Text(
-                                  [
-                                    if (exercise.equipment.isNotEmpty)
-                                      exercise.equipment,
-                                    if (exercise.variant.isNotEmpty)
-                                      exercise.variant,
-                                  ].join(' · '),
-                                  style: const TextStyle(
+                                      color: AppColors.primary.withValues(
+                                        alpha: 0.8,
+                                      ),
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                if (exercise.equipment.isNotEmpty ||
+                                    exercise.variant.isNotEmpty)
+                                  Text(
+                                    [
+                                      if (exercise.equipment.isNotEmpty)
+                                        exercise.equipment,
+                                      if (exercise.variant.isNotEmpty)
+                                        exercise.variant,
+                                    ].join(' · '),
+                                    style: const TextStyle(
                                       color: AppColors.textSecondary,
-                                      fontSize: 11),
-                                ),
-                            ],
-                          ),
-                          isThreeLine: exercise.equipment.isNotEmpty ||
-                              exercise.variant.isNotEmpty,
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              IconButton(
-                                icon: Icon(Icons.edit,
-                                    color: AppColors.primary),
-                                onPressed: () => _showExerciseForm(
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                            isThreeLine:
+                                exercise.equipment.isNotEmpty ||
+                                exercise.variant.isNotEmpty,
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  icon: Icon(
+                                    Icons.edit,
+                                    color: AppColors.primary,
+                                  ),
+                                  onPressed: () => _showExerciseForm(
                                     existing: exercise,
-                                    index: realIndex),
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.delete,
-                                    color: Colors.redAccent),
-                                onPressed: () =>
-                                    _deleteExercise(realIndex),
-                              ),
-                            ],
+                                    index: realIndex,
+                                  ),
+                                ),
+                                IconButton(
+                                  icon: const Icon(
+                                    Icons.delete,
+                                    color: Colors.redAccent,
+                                  ),
+                                  onPressed: () => _deleteExercise(realIndex),
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                      );
-                    },
+                        );
+                      },
+                    ),
                   ),
           ),
         ],
@@ -375,8 +490,7 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
       onTap: () => setState(() => _selectedMuscleFilter = value),
       child: Container(
         margin: const EdgeInsets.only(right: 8),
-        padding:
-            const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
         decoration: BoxDecoration(
           color: isSelected
               ? AppColors.primary.withValues(alpha: 0.2)
@@ -388,15 +502,14 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
                 : AppColors.primary.withValues(alpha: 0.2),
           ),
         ),
-        child: Text(label,
-            style: TextStyle(
-              color: isSelected
-                  ? AppColors.primary
-                  : AppColors.textSecondary,
-              fontSize: 12,
-              fontWeight:
-                  isSelected ? FontWeight.bold : FontWeight.normal,
-            )),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: isSelected ? AppColors.primary : AppColors.textSecondary,
+            fontSize: 12,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          ),
+        ),
       ),
     );
   }

@@ -813,148 +813,173 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
                 style: TextStyle(color: Colors.white60, fontSize: 15),
               ),
             )
-          : ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: widget.routine.exercises.length,
-              itemBuilder: (context, index) {
-                final routineExercise = widget.routine.exercises[index];
-                final exercise = routineExercise.exercise;
-                return Card(
-                  color: AppColors.backgroundAppBar,
-                  margin: const EdgeInsets.only(bottom: 16),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    exercise.name,
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 15,
-                                    ),
-                                  ),
-                                  if (exercise.muscle.isNotEmpty)
+          : Theme(
+              data: Theme.of(context).copyWith(
+                canvasColor: Colors.transparent,
+                shadowColor: Colors.transparent,
+              ),
+              child: ReorderableListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: widget.routine.exercises.length,
+                onReorder: (oldIndex, newIndex) async {
+                  setState(() {
+                    if (newIndex > oldIndex) newIndex--;
+                    final item = widget.routine.exercises.removeAt(oldIndex);
+                    widget.routine.exercises.insert(newIndex, item);
+                  });
+                  await _save();
+                },
+                itemBuilder: (context, index) {
+                  final routineExercise = widget.routine.exercises[index];
+                  final exercise = routineExercise.exercise;
+                  return Card(
+                    key: ValueKey(exercise.name),
+                    color: AppColors.backgroundAppBar,
+                    margin: const EdgeInsets.only(bottom: 16),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              ReorderableDragStartListener(
+                                index: index,
+                                child: const Icon(
+                                  Icons.drag_handle,
+                                  color: AppColors.textSecondary,
+                                  size: 20,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
                                     Text(
-                                      [
-                                        if (exercise.muscle.isNotEmpty)
-                                          exercise.muscle,
-                                        if (exercise.equipment.isNotEmpty)
-                                          exercise.equipment,
-                                        if (exercise.variant.isNotEmpty)
-                                          exercise.variant,
-                                      ].join(' · '),
-                                      style: TextStyle(
-                                        color: AppColors.primary.withValues(
-                                          alpha: 0.7,
-                                        ),
-                                        fontSize: 11,
-                                      ),
-                                    ),
-                                ],
-                              ),
-                            ),
-                            IconButton(
-                              icon: const Icon(
-                                Icons.edit_outlined,
-                                color: AppColors.textSecondary,
-                                size: 18,
-                              ),
-                              onPressed: () =>
-                                  _showSeriesForm(routineExercise, exercise),
-                            ),
-                            IconButton(
-                              icon: const Icon(
-                                Icons.remove_circle_outline,
-                                color: Colors.redAccent,
-                                size: 18,
-                              ),
-                              onPressed: () => _removeExercise(index),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        // Lista de series
-                        ...routineExercise.series.asMap().entries.map((entry) {
-                          final i = entry.key;
-                          final serie = entry.value;
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 8),
-                            child: Row(
-                              children: [
-                                Container(
-                                  width: 28,
-                                  height: 28,
-                                  decoration: BoxDecoration(
-                                    color: AppColors.primary.withValues(
-                                      alpha: 0.15,
-                                    ),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Center(
-                                    child: Text(
-                                      '${i + 1}',
-                                      style: TextStyle(
-                                        color: AppColors.primary,
+                                      exercise.name,
+                                      style: const TextStyle(
+                                        color: Colors.white,
                                         fontWeight: FontWeight.bold,
-                                        fontSize: 12,
+                                        fontSize: 15,
                                       ),
                                     ),
-                                  ),
+                                    if (exercise.muscle.isNotEmpty)
+                                      Text(
+                                        [
+                                          if (exercise.muscle.isNotEmpty)
+                                            exercise.muscle,
+                                          if (exercise.equipment.isNotEmpty)
+                                            exercise.equipment,
+                                          if (exercise.variant.isNotEmpty)
+                                            exercise.variant,
+                                        ].join(' · '),
+                                        style: TextStyle(
+                                          color: AppColors.primary.withValues(
+                                            alpha: 0.7,
+                                          ),
+                                          fontSize: 11,
+                                        ),
+                                      ),
+                                  ],
                                 ),
-                                const SizedBox(width: 12),
-                                Text(
-                                  '${serie.reps} reps',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 14,
-                                  ),
+                              ),
+                              IconButton(
+                                icon: const Icon(
+                                  Icons.edit_outlined,
+                                  color: AppColors.textSecondary,
+                                  size: 18,
                                 ),
-                                const Spacer(),
-                                GestureDetector(
-                                  onTap: () => _editSerieWeight(
-                                    serie,
-                                    exercise.name,
-                                    entry.key,
-                                  ),
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 12,
-                                      vertical: 6,
-                                    ),
+                                onPressed: () =>
+                                    _showSeriesForm(routineExercise, exercise),
+                              ),
+                              IconButton(
+                                icon: const Icon(
+                                  Icons.remove_circle_outline,
+                                  color: Colors.redAccent,
+                                  size: 18,
+                                ),
+                                onPressed: () => _removeExercise(index),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          ...routineExercise.series.asMap().entries.map((
+                            entry,
+                          ) {
+                            final i = entry.key;
+                            final serie = entry.value;
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 8),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 28,
+                                    height: 28,
                                     decoration: BoxDecoration(
-                                      border: Border.all(
-                                        color: AppColors.primary,
+                                      color: AppColors.primary.withValues(
+                                        alpha: 0.15,
                                       ),
                                       borderRadius: BorderRadius.circular(8),
                                     ),
-                                    child: Text(
-                                      serie.weight == 0
-                                          ? '— $_unit'
-                                          : '${serie.weight} $_unit',
-                                      style: TextStyle(
-                                        color: AppColors.primary,
-                                        fontWeight: FontWeight.bold,
+                                    child: Center(
+                                      child: Text(
+                                        '${i + 1}',
+                                        style: TextStyle(
+                                          color: AppColors.primary,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 12,
+                                        ),
                                       ),
                                     ),
                                   ),
-                                ),
-                              ],
-                            ),
-                          );
-                        }),
-                      ],
+                                  const SizedBox(width: 12),
+                                  Text(
+                                    '${serie.reps} reps',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                  const Spacer(),
+                                  GestureDetector(
+                                    onTap: () => _editSerieWeight(
+                                      serie,
+                                      exercise.name,
+                                      i,
+                                    ),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 6,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        border: Border.all(
+                                          color: AppColors.primary,
+                                        ),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Text(
+                                        serie.weight == 0
+                                            ? '— $_unit'
+                                            : '${serie.weight} $_unit',
+                                        style: TextStyle(
+                                          color: AppColors.primary,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }),
+                        ],
+                      ),
                     ),
-                  ),
-                );
-              },
+                  );
+                },
+              ),
             ),
       floatingActionButton: widget.readOnly
           ? null
