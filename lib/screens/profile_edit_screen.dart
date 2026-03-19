@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:mjolnir/core/app_colors.dart';
 import 'package:mjolnir/models/user_profile.dart';
 import 'package:mjolnir/services/auth_service.dart';
-import 'package:mjolnir/screens/body_weight_screen.dart';
+import 'package:mjolnir/services/body_weight_service.dart';
 
 class ProfileEditScreen extends StatefulWidget {
   final UserProfile profile;
@@ -68,6 +68,12 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
             : _injuriesController.text.trim(),
       );
       await AuthService.updateProfile(updated);
+
+      // Si el peso cambió, registrar en historial
+      if (_weight != widget.profile.weight) {
+        await BodyWeightService.addEntry(_weight);
+      }
+
       if (mounted) Navigator.pop(context, updated);
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -405,46 +411,6 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                 focusedBorder: OutlineInputBorder(
                   borderSide: BorderSide(color: AppColors.primary),
                   borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
-            GestureDetector(
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const BodyWeightScreen()),
-              ),
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: AppColors.primary.withValues(alpha: 0.25),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.monitor_weight_outlined,
-                      color: AppColors.primary,
-                    ),
-                    const SizedBox(width: 12),
-                    const Expanded(
-                      child: Text(
-                        'Historial de peso corporal',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    const Icon(
-                      Icons.chevron_right,
-                      color: AppColors.textSecondary,
-                    ),
-                  ],
                 ),
               ),
             ),

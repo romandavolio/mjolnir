@@ -4,16 +4,13 @@ import 'package:mjolnir/models/exercise.dart';
 import 'package:mjolnir/screens/progress_detail_screen.dart';
 import 'package:mjolnir/services/routine_service.dart';
 import 'package:mjolnir/services/stats_service.dart';
+import 'package:mjolnir/screens/body_weight_screen.dart';
 
 class ProgressScreen extends StatefulWidget {
   final String? viewAsUid;
   final String? title;
 
-  const ProgressScreen({
-    super.key,
-    this.viewAsUid,
-    this.title,
-  });
+  const ProgressScreen({super.key, this.viewAsUid, this.title});
 
   @override
   State<ProgressScreen> createState() => _ProgressScreenState();
@@ -30,7 +27,7 @@ class _ProgressScreenState extends State<ProgressScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
     _loadData();
   }
 
@@ -43,9 +40,11 @@ class _ProgressScreenState extends State<ProgressScreen>
   Future<void> _loadData() async {
     final saved = await RoutineService.loadExercises();
     final records = await StatsService.getPersonalRecords(
-        uid: widget.viewAsUid);
+      uid: widget.viewAsUid,
+    );
     final monthly = await StatsService.getMonthlyProgress(
-        uid: widget.viewAsUid);
+      uid: widget.viewAsUid,
+    );
 
     if (!mounted) return;
     setState(() {
@@ -72,17 +71,20 @@ class _ProgressScreenState extends State<ProgressScreen>
           tabs: const [
             Tab(text: 'EJERCICIOS'),
             Tab(text: 'ESTADÍSTICAS'),
+            Tab(text: 'PESO'),
           ],
         ),
       ),
       body: _loading
           ? const Center(
-              child: CircularProgressIndicator(color: AppColors.primary))
+              child: CircularProgressIndicator(color: AppColors.primary),
+            )
           : TabBarView(
               controller: _tabController,
               children: [
                 _buildExerciseList(),
                 _buildStats(),
+                _buildBodyWeight(),
               ],
             ),
     );
@@ -115,8 +117,7 @@ class _ProgressScreenState extends State<ProgressScreen>
           ),
           child: Container(
             margin: const EdgeInsets.only(bottom: 12),
-            padding:
-                const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
             decoration: BoxDecoration(
               color: AppColors.surface,
               borderRadius: BorderRadius.circular(14),
@@ -137,31 +138,42 @@ class _ProgressScreenState extends State<ProgressScreen>
                       color: AppColors.primary.withValues(alpha: 0.3),
                     ),
                   ),
-                  child: const Icon(Icons.show_chart,
-                      color: AppColors.primary, size: 20),
+                  child: const Icon(
+                    Icons.show_chart,
+                    color: AppColors.primary,
+                    size: 20,
+                  ),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(exercise.name,
-                          style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 15,
-                              fontWeight: FontWeight.bold)),
+                      Text(
+                        exercise.name,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                       if (exercise.muscle.isNotEmpty)
-                        Text(exercise.muscle,
-                            style: const TextStyle(
-                                color: AppColors.textSecondary,
-                                fontSize: 12)),
+                        Text(
+                          exercise.muscle,
+                          style: const TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 12,
+                          ),
+                        ),
                     ],
                   ),
                 ),
                 if (_records.containsKey(exercise.name))
                   Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 4),
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.primary.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(8),
@@ -169,14 +181,14 @@ class _ProgressScreenState extends State<ProgressScreen>
                     child: Text(
                       'PR ${_records[exercise.name]!.toInt()} kg',
                       style: TextStyle(
-                          color: AppColors.primary,
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold),
+                        color: AppColors.primary,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 const SizedBox(width: 8),
-                const Icon(Icons.chevron_right,
-                    color: AppColors.textSecondary),
+                const Icon(Icons.chevron_right, color: AppColors.textSecondary),
               ],
             ),
           ),
@@ -193,37 +205,46 @@ class _ProgressScreenState extends State<ProgressScreen>
         if (_records.isNotEmpty) ...[
           _sectionLabel('RÉCORDS PERSONALES'),
           const SizedBox(height: 12),
-          ..._records.entries.map((entry) => Container(
-                margin: const EdgeInsets.only(bottom: 8),
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 16, vertical: 12),
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                      color: AppColors.primary.withValues(alpha: 0.2)),
+          ..._records.entries.map(
+            (entry) => Container(
+              margin: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: AppColors.primary.withValues(alpha: 0.2),
                 ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.emoji_events,
-                        color: AppColors.primary, size: 20),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(entry.key,
-                          style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.emoji_events,
+                    color: AppColors.primary,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      entry.key,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                    Text(
-                      '${entry.value.toInt()} kg',
-                      style: TextStyle(
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16),
+                  ),
+                  Text(
+                    '${entry.value.toInt()} kg',
+                    style: TextStyle(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
                     ),
-                  ],
-                ),
-              )),
+                  ),
+                ],
+              ),
+            ),
+          ),
           const SizedBox(height: 24),
         ],
 
@@ -236,23 +257,19 @@ class _ProgressScreenState extends State<ProgressScreen>
             final isPositive = diff >= 0;
             return Container(
               margin: const EdgeInsets.only(bottom: 8),
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 16, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
                 color: AppColors.surface,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                    color: AppColors.primary.withValues(alpha: 0.2)),
+                  color: AppColors.primary.withValues(alpha: 0.2),
+                ),
               ),
               child: Row(
                 children: [
                   Icon(
-                    isPositive
-                        ? Icons.trending_up
-                        : Icons.trending_down,
-                    color: isPositive
-                        ? AppColors.secondary
-                        : Colors.redAccent,
+                    isPositive ? Icons.trending_up : Icons.trending_down,
+                    color: isPositive ? AppColors.secondary : Colors.redAccent,
                     size: 20,
                   ),
                   const SizedBox(width: 12),
@@ -260,15 +277,19 @@ class _ProgressScreenState extends State<ProgressScreen>
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(entry.key,
-                            style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold)),
+                        Text(
+                          entry.key,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                         Text(
                           'Mes anterior: ${entry.value['lastMonth']!.toStringAsFixed(1)} kg',
                           style: const TextStyle(
-                              color: AppColors.textSecondary,
-                              fontSize: 12),
+                            color: AppColors.textSecondary,
+                            fontSize: 12,
+                          ),
                         ),
                       ],
                     ),
@@ -279,17 +300,19 @@ class _ProgressScreenState extends State<ProgressScreen>
                       Text(
                         '${entry.value['thisMonth']!.toStringAsFixed(1)} kg',
                         style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold),
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       Text(
                         '${isPositive ? '+' : ''}${diff.toStringAsFixed(1)} kg',
                         style: TextStyle(
-                            color: isPositive
-                                ? AppColors.secondary
-                                : Colors.redAccent,
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold),
+                          color: isPositive
+                              ? AppColors.secondary
+                              : Colors.redAccent,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ],
                   ),
@@ -300,8 +323,7 @@ class _ProgressScreenState extends State<ProgressScreen>
           const SizedBox(height: 24),
         ],
 
-        if (_records.isEmpty &&
-            _monthlyProgress.isEmpty)
+        if (_records.isEmpty && _monthlyProgress.isEmpty)
           const Center(
             child: Padding(
               padding: EdgeInsets.only(top: 60),
@@ -316,12 +338,19 @@ class _ProgressScreenState extends State<ProgressScreen>
     );
   }
 
+  Widget _buildBodyWeight() {
+    return BodyWeightScreen(viewAsUid: widget.viewAsUid, embedded: true);
+  }
+
   Widget _sectionLabel(String label) {
-    return Text(label,
-        style: const TextStyle(
-            color: AppColors.textSecondary,
-            fontSize: 11,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 1.5));
+    return Text(
+      label,
+      style: const TextStyle(
+        color: AppColors.textSecondary,
+        fontSize: 11,
+        fontWeight: FontWeight.w600,
+        letterSpacing: 1.5,
+      ),
+    );
   }
 }
