@@ -12,6 +12,7 @@ import 'package:mjolnir/services/user_service.dart';
 import 'package:mjolnir/screens/students_screen.dart';
 import 'package:mjolnir/screens/notifications_screen.dart';
 import 'package:mjolnir/services/notification_service.dart';
+import 'package:mjolnir/screens/profile_screen.dart';
 
 class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({super.key});
@@ -109,11 +110,20 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
             if (_profile != null)
               Row(
                 children: [
-                  Text(
-                    _profile!.name.split(' ').first,
-                    style: const TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 13,
+                  GestureDetector(
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ProfileScreen(profile: _profile!),
+                      ),
+                    ),
+                    child: Text(
+                      _profile!.name.split(' ').first,
+                      style: const TextStyle(
+                        color: AppColors.primary,
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 8),
