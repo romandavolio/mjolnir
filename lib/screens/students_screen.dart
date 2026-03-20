@@ -262,13 +262,16 @@ class _StudentsScreenState extends State<StudentsScreen> {
                             itemBuilder: (context, index) {
                               final alumno = _linkedAlumnos[index];
                               return GestureDetector(
-                                onTap: () => Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) =>
-                                        AlumnoDetailScreen(alumno: alumno),
-                                  ),
-                                ),
+                                onTap: () async {
+                                  await Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) =>
+                                          AlumnoDetailScreen(alumno: alumno),
+                                    ),
+                                  );
+                                  _loadData();
+                                },
                                 child: Container(
                                   margin: const EdgeInsets.only(bottom: 12),
                                   padding: const EdgeInsets.symmetric(

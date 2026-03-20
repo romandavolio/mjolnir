@@ -77,4 +77,37 @@ class LinkService {
         .get();
     return snapshot.docs.isNotEmpty;
   }
+
+  static Future<List<UserProfile>> getLinkedTrainers(String alumnoId) async {
+    final snapshot = await _db
+        .collection('solicitudes')
+        .where('alumnoId', isEqualTo: alumnoId)
+        .where('status', isEqualTo: 'accepted')
+        .get();
+
+    final requests = snapshot.docs
+        .map((d) => LinkRequest.fromJson(d.data()))
+        .toList();
+
+    final List<UserProfile> trainers = [];
+    for (final req in requests) {
+      final doc = await _db.collection('usuarios').doc(req.trainerId).get();
+      if (doc.exists) trainers.add(UserProfile.fromJson(doc.data()!));
+    }
+    return trainers;
+  }
+
+  static Future<void> unlinkTrainer({
+    required String trainerId,
+    required String alumnoId,
+  }) async {
+    final snapshot = await _db
+        .collection('solicitudes')
+        .where('trainerId', isEqualTo: trainerId)
+        .where('alumnoId', isEqualTo: alumnoId)
+        .get();
+    for (final doc in snapshot.docs) {
+      await doc.reference.delete();
+    }
+  }
 }

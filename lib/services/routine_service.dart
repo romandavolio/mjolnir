@@ -59,15 +59,22 @@ class RoutineService {
 
   static Future<void> assignRoutine({
     required String alumnoId,
+    required String alumnoName,
     required String rutinaId,
   }) async {
     final trainerId = AuthService.currentUser?.uid;
     if (trainerId == null) return;
+
+    final trainerDoc = await _db.collection('usuarios').doc(trainerId).get();
+    final trainerName = trainerDoc.data()?['name'] ?? '';
+
     final id = DateTime.now().millisecondsSinceEpoch.toString();
     final assignment = AssignedRoutine(
       id: id,
       trainerId: trainerId,
+      trainerName: trainerName,
       alumnoId: alumnoId,
+      alumnoName: alumnoName,
       rutinaId: rutinaId,
       fechaAsignacion: DateTime.now(),
     );
@@ -239,5 +246,56 @@ class RoutineService {
         .collection('ejercicios')
         .get();
     return snapshot.docs.map((d) => Exercise.fromJson(d.data())).toList();
+  }
+
+  // Compartir rutina del alumno con un trainer
+  static Future<void> shareRoutineWithTrainer({
+    required String trainerId,
+    required String trainerName,
+    required String alumnoId,
+    required String alumnoName,
+    required String rutinaId,
+  }) async {
+    final id = DateTime.now().millisecondsSinceEpoch.toString();
+    final assignment = AssignedRoutine(
+      id: id,
+      trainerId: trainerId,
+      trainerName: trainerName,
+      alumnoId: alumnoId,
+      alumnoName: alumnoName,
+      rutinaId: rutinaId,
+      fechaAsignacion: DateTime.now(),
+      sharedByAlumno: true,
+    );
+    await _db.collection('rutinas_asignadas').doc(id).set(assignment.toJson());
+  }
+
+  // Verificar si ya está compartida
+  static Future<bool> isRoutineSharedWithTrainer({
+    required String trainerId,
+    required String alumnoId,
+    required String rutinaId,
+  }) async {
+    final snapshot = await _db
+        .collection('rutinas_asignadas')
+        .where('trainerId', isEqualTo: trainerId)
+        .where('alumnoId', isEqualTo: alumnoId)
+        .where('rutinaId', isEqualTo: rutinaId)
+        .get();
+    return snapshot.docs.isNotEmpty;
+  }
+
+  static Future<void> deleteAssignedRoutinesByTrainer({
+    required String trainerId,
+    required String alumnoId,
+  }) async {
+    final snapshot = await _db
+        .collection('rutinas_asignadas')
+        .where('trainerId', isEqualTo: trainerId)
+        .where('alumnoId', isEqualTo: alumnoId)
+        .get();
+    for (final doc in snapshot.docs) {
+      await doc.reference.delete();
+    }
   }
 }

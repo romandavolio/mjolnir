@@ -8,11 +8,7 @@ class NotificationService {
 
   static Future<void> initialize() async {
     // Pedir permisos
-    await _messaging.requestPermission(
-      alert: true,
-      badge: true,
-      sound: true,
-    );
+    await _messaging.requestPermission(alert: true, badge: true, sound: true);
 
     // Guardar token del dispositivo en Firestore
     await saveToken();
@@ -29,9 +25,7 @@ class NotificationService {
     if (uid == null) return;
     final token = await _messaging.getToken();
     if (token == null) return;
-    await _db.collection('usuarios').doc(uid).update({
-      'fcmToken': token,
-    });
+    await _db.collection('usuarios').doc(uid).update({'fcmToken': token});
   }
 
   static Future<void> sendLinkRequestNotification({
@@ -62,9 +56,27 @@ class NotificationService {
   }
 
   static Future<void> markAsRead(String notificationId) async {
-    await _db
-        .collection('notificaciones')
-        .doc(notificationId)
-        .update({'read': true});
+    await _db.collection('notificaciones').doc(notificationId).update({
+      'read': true,
+    });
+  }
+
+  static Future<void> sendUnlinkNotification({
+    required String targetUid,
+    required String senderName,
+    required String role,
+  }) async {
+    final message = role == 'alumno'
+        ? '$senderName se desvinculó de vos como alumno'
+        : '$senderName se desvinculó de vos como trainer';
+
+    await _db.collection('notificaciones').add({
+      'userId': targetUid,
+      'title': 'Desvinculación',
+      'body': message,
+      'type': 'unlink',
+      'read': false,
+      'createdAt': DateTime.now().toIso8601String(),
+    });
   }
 }

@@ -8,6 +8,10 @@ import 'package:mjolnir/services/auth_service.dart';
 import 'package:mjolnir/services/routine_service.dart';
 import 'package:mjolnir/screens/progress_screen.dart';
 import 'package:mjolnir/screens/body_weight_screen.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:mjolnir/services/link_service.dart';
+import 'package:mjolnir/services/notification_service.dart';
+import 'package:mjolnir/services/user_service.dart';
 
 class AlumnoDetailScreen extends StatefulWidget {
   final UserProfile alumno;
@@ -21,6 +25,7 @@ class AlumnoDetailScreen extends StatefulWidget {
 class _AlumnoDetailScreenState extends State<AlumnoDetailScreen> {
   List<Routine> _myRoutines = [];
   List<MapEntry<AssignedRoutine, Routine>> _assignedRoutines = [];
+  List<MapEntry<AssignedRoutine, Routine>> _sharedRoutines = [];
   bool _loading = true;
 
   @override
@@ -35,22 +40,40 @@ class _AlumnoDetailScreenState extends State<AlumnoDetailScreen> {
       AuthService.currentUser!.uid,
       widget.alumno.uid,
     );
-
     final List<MapEntry<AssignedRoutine, Routine>> assignedWithRoutines = [];
+    final List<MapEntry<AssignedRoutine, Routine>> sharedWithRoutines = [];
+
     for (final assignment in assignments) {
-      final routine = await RoutineService.loadRoutine(
-        assignment.trainerId,
-        assignment.rutinaId,
-      );
+      Routine? routine;
+      if (assignment.sharedByAlumno) {
+        // La rutina es del alumno
+        final doc = await FirebaseFirestore.instance
+            .collection('usuarios')
+            .doc(widget.alumno.uid)
+            .collection('rutinas')
+            .doc(assignment.rutinaId)
+            .get();
+        if (doc.exists) routine = Routine.fromJson(doc.data()!);
+      } else {
+        // La rutina es del trainer
+        routine = await RoutineService.loadRoutine(
+          assignment.trainerId,
+          assignment.rutinaId,
+        );
+      }
       if (routine != null) {
-        assignedWithRoutines.add(MapEntry(assignment, routine));
+        if (assignment.sharedByAlumno) {
+          sharedWithRoutines.add(MapEntry(assignment, routine));
+        } else {
+          assignedWithRoutines.add(MapEntry(assignment, routine));
+        }
       }
     }
-
     if (!mounted) return;
     setState(() {
       _myRoutines = myRoutines;
       _assignedRoutines = assignedWithRoutines;
+      _sharedRoutines = sharedWithRoutines;
       _loading = false;
     });
   }
@@ -96,6 +119,7 @@ class _AlumnoDetailScreenState extends State<AlumnoDetailScreen> {
                 onTap: () async {
                   await RoutineService.assignRoutine(
                     alumnoId: widget.alumno.uid,
+                    alumnoName: widget.alumno.name,
                     rutinaId: routine.id,
                   );
                   Navigator.pop(context);
@@ -232,17 +256,92 @@ class _AlumnoDetailScreenState extends State<AlumnoDetailScreen> {
         title: Text(widget.alumno.name),
         backgroundColor: AppColors.backgroundAppBar,
         foregroundColor: AppColors.primary,
+        actions: [
+          TextButton(
+            onPressed: _showUnlinkDialog,
+            child: const Text(
+              'Desvincular',
+              style: TextStyle(color: Colors.redAccent),
+            ),
+          ),
+        ],
       ),
       body: _loading
           ? const Center(
               child: CircularProgressIndicator(color: AppColors.primary),
             )
-          : Padding(
+          : ListView(
               padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Info del alumno
+              children: [
+                // Info del alumno
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: AppColors.primary.withValues(alpha: 0.25),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 28,
+                        backgroundColor: AppColors.primary.withValues(
+                          alpha: 0.2,
+                        ),
+                        child: Text(
+                          widget.alumno.name[0].toUpperCase(),
+                          style: TextStyle(
+                            color: AppColors.primary,
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            widget.alumno.name,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Text(
+                            widget.alumno.email,
+                            style: const TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                // Datos personales
+                if (widget.alumno.age != null ||
+                    widget.alumno.height != null ||
+                    widget.alumno.weight != null ||
+                    widget.alumno.goal != null ||
+                    widget.alumno.experienceLevel != null ||
+                    widget.alumno.injuries != null) ...[
+                  const Text(
+                    'DATOS PERSONALES',
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 11,
+                      letterSpacing: 1.5,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(16),
@@ -253,238 +352,175 @@ class _AlumnoDetailScreenState extends State<AlumnoDetailScreen> {
                         color: AppColors.primary.withValues(alpha: 0.25),
                       ),
                     ),
-                    child: Row(
+                    child: Column(
                       children: [
-                        CircleAvatar(
-                          radius: 28,
-                          backgroundColor: AppColors.primary.withValues(
-                            alpha: 0.2,
-                          ),
-                          child: Text(
-                            widget.alumno.name[0].toUpperCase(),
-                            style: TextStyle(
-                              color: AppColors.primary,
-                              fontSize: 22,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              widget.alumno.name,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
+                        if (widget.alumno.age != null ||
+                            widget.alumno.height != null)
+                          _buildDataRow([
+                            if (widget.alumno.age != null)
+                              _dataItem('Edad', '${widget.alumno.age} años'),
+                            if (widget.alumno.height != null)
+                              _dataItem(
+                                'Altura',
+                                '${widget.alumno.height!.toInt()} cm',
                               ),
-                            ),
-                            Text(
-                              widget.alumno.email,
-                              style: const TextStyle(
-                                color: AppColors.textSecondary,
-                                fontSize: 12,
+                          ]),
+                        if (widget.alumno.weight != null ||
+                            widget.alumno.targetWeight != null)
+                          _buildDataRow([
+                            if (widget.alumno.weight != null)
+                              _dataItem(
+                                'Peso',
+                                '${widget.alumno.weight!.toInt()} kg',
                               ),
+                            if (widget.alumno.targetWeight != null)
+                              _dataItem(
+                                'Objetivo',
+                                '${widget.alumno.targetWeight!.toInt()} kg',
+                              ),
+                          ]),
+                        if (widget.alumno.experienceLevel != null)
+                          _buildDataRow([
+                            _dataItem('Nivel', widget.alumno.experienceLevel!),
+                          ]),
+                        if (widget.alumno.goal != null)
+                          _buildDataRow([
+                            _dataItem('Meta', widget.alumno.goal!),
+                          ]),
+                        if (widget.alumno.injuries != null) ...[
+                          const Divider(color: Colors.white10),
+                          const SizedBox(height: 8),
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Lesiones / limitaciones',
+                                  style: TextStyle(
+                                    color: AppColors.textSecondary,
+                                    fontSize: 11,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  widget.alumno.injuries!,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ],
                     ),
                   ),
                   const SizedBox(height: 24),
-                  // Datos personales del alumno
-                  if (widget.alumno.age != null ||
-                      widget.alumno.height != null ||
-                      widget.alumno.weight != null ||
-                      widget.alumno.goal != null ||
-                      widget.alumno.experienceLevel != null ||
-                      widget.alumno.injuries != null) ...[
-                    const Text(
-                      'DATOS PERSONALES',
-                      style: TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 11,
-                        letterSpacing: 1.5,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: AppColors.surface,
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(
-                          color: AppColors.primary.withValues(alpha: 0.25),
-                        ),
-                      ),
-                      child: Column(
-                        children: [
-                          if (widget.alumno.age != null ||
-                              widget.alumno.height != null)
-                            _buildDataRow([
-                              if (widget.alumno.age != null)
-                                _dataItem('Edad', '${widget.alumno.age} años'),
-                              if (widget.alumno.height != null)
-                                _dataItem(
-                                  'Altura',
-                                  '${widget.alumno.height!.toInt()} cm',
-                                ),
-                            ]),
-                          if (widget.alumno.weight != null ||
-                              widget.alumno.targetWeight != null)
-                            _buildDataRow([
-                              if (widget.alumno.weight != null)
-                                _dataItem(
-                                  'Peso',
-                                  '${widget.alumno.weight!.toInt()} kg',
-                                ),
-                              if (widget.alumno.targetWeight != null)
-                                _dataItem(
-                                  'Objetivo',
-                                  '${widget.alumno.targetWeight!.toInt()} kg',
-                                ),
-                            ]),
-                          if (widget.alumno.experienceLevel != null)
-                            _buildDataRow([
-                              _dataItem(
-                                'Nivel',
-                                widget.alumno.experienceLevel!,
-                              ),
-                            ]),
-                          if (widget.alumno.goal != null)
-                            _buildDataRow([
-                              _dataItem('Meta', widget.alumno.goal!),
-                            ]),
-                          if (widget.alumno.injuries != null) ...[
-                            const Divider(color: Colors.white10),
-                            const SizedBox(height: 8),
-                            Align(
-                              alignment: Alignment.centerLeft,
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text(
-                                    'Lesiones / limitaciones',
-                                    style: TextStyle(
-                                      color: AppColors.textSecondary,
-                                      fontSize: 11,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    widget.alumno.injuries!,
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 14,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                  ],
-                  const SizedBox(height: 16),
-                  GestureDetector(
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => ProgressScreen(
-                          viewAsUid: widget.alumno.uid,
-                          title:
-                              'Progreso de ${widget.alumno.name.split(' ').first}',
-                        ),
-                      ),
-                    ),
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 14,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.surface,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: AppColors.secondary.withValues(alpha: 0.4),
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.show_chart,
-                            color: AppColors.secondary,
-                            size: 20,
-                          ),
-                          const SizedBox(width: 12),
-                          Text(
-                            'Ver progreso del alumno',
-                            style: TextStyle(
-                              color: AppColors.secondary,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const Spacer(),
-                          Icon(Icons.chevron_right, color: AppColors.secondary),
-                        ],
+                ],
+
+                const SizedBox(height: 16),
+
+                // Ver progreso
+                GestureDetector(
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => ProgressScreen(
+                        viewAsUid: widget.alumno.uid,
+                        title:
+                            'Progreso de ${widget.alumno.name.split(' ').first}',
                       ),
                     ),
                   ),
-                  const SizedBox(height: 12),
-                  GestureDetector(
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => BodyWeightScreen(
-                          viewAsUid: widget.alumno.uid,
-                          title:
-                              'Peso de ${widget.alumno.name.split(' ').first}',
-                        ),
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 14,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: AppColors.secondary.withValues(alpha: 0.4),
                       ),
                     ),
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 14,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.surface,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: AppColors.secondary.withValues(alpha: 0.4),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.show_chart,
+                          color: AppColors.secondary,
+                          size: 20,
                         ),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.monitor_weight_outlined,
+                        const SizedBox(width: 12),
+                        Text(
+                          'Ver progreso del alumno',
+                          style: TextStyle(
                             color: AppColors.secondary,
-                            size: 20,
+                            fontWeight: FontWeight.bold,
                           ),
-                          const SizedBox(width: 12),
-                          Text(
-                            'Ver peso corporal',
-                            style: TextStyle(
-                              color: AppColors.secondary,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const Spacer(),
-                          Icon(Icons.chevron_right, color: AppColors.secondary),
-                        ],
+                        ),
+                        const Spacer(),
+                        Icon(Icons.chevron_right, color: AppColors.secondary),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                // Ver peso corporal
+                GestureDetector(
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => BodyWeightScreen(
+                        viewAsUid: widget.alumno.uid,
+                        title: 'Peso de ${widget.alumno.name.split(' ').first}',
                       ),
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 14,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: AppColors.secondary.withValues(alpha: 0.4),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.monitor_weight_outlined,
+                          color: AppColors.secondary,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          'Ver peso corporal',
+                          style: TextStyle(
+                            color: AppColors.secondary,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const Spacer(),
+                        Icon(Icons.chevron_right, color: AppColors.secondary),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Rutinas compartidas por el alumno
+                if (_sharedRoutines.isNotEmpty) ...[
                   const Text(
-                    'RUTINAS ASIGNADAS',
+                    'COMPARTIDAS POR EL ALUMNO',
                     style: TextStyle(
                       color: AppColors.textSecondary,
                       fontSize: 11,
@@ -492,127 +528,209 @@ class _AlumnoDetailScreenState extends State<AlumnoDetailScreen> {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  Expanded(
-                    child: _assignedRoutines.isEmpty
-                        ? const Center(
-                            child: Text(
-                              'No hay rutinas asignadas todavía.\nTocá + para asignar una.',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                color: Colors.white60,
-                                fontSize: 15,
-                              ),
+                  ..._sharedRoutines.map((entry) {
+                    final routine = entry.value;
+                    return GestureDetector(
+                      onTap: () async {
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => RoutineDetailScreen(
+                              routine: routine,
+                              onSave: () => RoutineService.saveRoutine(routine),
+                              readOnly: true,
                             ),
-                          )
-                        : ListView.builder(
-                            itemCount: _assignedRoutines.length,
-                            itemBuilder: (context, index) {
-                              final entry = _assignedRoutines[index];
-                              final assignment = entry.key;
-                              final routine = entry.value;
-                              return GestureDetector(
-                                onTap: () async {
-                                  await Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => RoutineDetailScreen(
-                                        routine: routine,
-                                        onSave: () =>
-                                            RoutineService.saveRoutine(routine),
-                                        viewAsUid: widget.alumno.uid,
-                                      ),
-                                    ),
-                                  );
-                                  _loadData();
-                                },
-                                child: Container(
-                                  margin: const EdgeInsets.only(bottom: 12),
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 20,
-                                    vertical: 18,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.surface,
-                                    borderRadius: BorderRadius.circular(14),
-                                    border: Border.all(
-                                      color: AppColors.primary.withValues(
-                                        alpha: 0.25,
-                                      ),
-                                      width: 1.5,
-                                    ),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Container(
-                                        width: 40,
-                                        height: 40,
-                                        decoration: BoxDecoration(
-                                          color: AppColors.primary.withValues(
-                                            alpha: 0.1,
-                                          ),
-                                          borderRadius: BorderRadius.circular(
-                                            10,
-                                          ),
-                                          border: Border.all(
-                                            color: AppColors.primary.withValues(
-                                              alpha: 0.3,
-                                            ),
-                                          ),
-                                        ),
-                                        child: const Icon(
-                                          Icons.fitness_center,
-                                          color: AppColors.primary,
-                                          size: 20,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 16),
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              routine.name,
-                                              style: const TextStyle(
-                                                color: Colors.white,
-                                                fontSize: 15,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                            Text(
-                                              '${routine.exercises.length} ejercicios',
-                                              style: const TextStyle(
-                                                color: AppColors.textSecondary,
-                                                fontSize: 12,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      IconButton(
-                                        icon: const Icon(
-                                          Icons.delete_outline,
-                                          color: Colors.redAccent,
-                                          size: 20,
-                                        ),
-                                        onPressed: () => _deleteAssignment(
-                                          assignment,
-                                          routine,
-                                        ),
-                                      ),
-                                      const Icon(
-                                        Icons.chevron_right,
-                                        color: AppColors.textSecondary,
-                                      ),
-                                    ],
+                          ),
+                        );
+                        _loadData();
+                      },
+                      child: Container(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 18,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.surface,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: AppColors.secondary.withValues(alpha: 0.4),
+                            width: 1.5,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                color: AppColors.secondary.withValues(
+                                  alpha: 0.1,
+                                ),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(
+                                  color: AppColors.secondary.withValues(
+                                    alpha: 0.3,
                                   ),
                                 ),
-                              );
-                            },
-                          ),
-                  ),
+                              ),
+                              child: const Icon(
+                                Icons.fitness_center,
+                                color: AppColors.secondary,
+                                size: 20,
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    routine.name,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  Text(
+                                    'Compartida por el alumno',
+                                    style: TextStyle(
+                                      color: AppColors.secondary,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const Icon(
+                              Icons.chevron_right,
+                              color: AppColors.textSecondary,
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }),
+                  const SizedBox(height: 16),
                 ],
-              ),
+
+                // Rutinas asignadas
+                const Text(
+                  'RUTINAS ASIGNADAS',
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 11,
+                    letterSpacing: 1.5,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                if (_assignedRoutines.isEmpty)
+                  const Center(
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(vertical: 24),
+                      child: Text(
+                        'No hay rutinas asignadas todavía.\nTocá + para asignar una.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Colors.white60, fontSize: 15),
+                      ),
+                    ),
+                  )
+                else
+                  ..._assignedRoutines.map((entry) {
+                    final assignment = entry.key;
+                    final routine = entry.value;
+                    return GestureDetector(
+                      onTap: () async {
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => RoutineDetailScreen(
+                              routine: routine,
+                              onSave: () => RoutineService.saveRoutine(routine),
+                              viewAsUid: widget.alumno.uid,
+                            ),
+                          ),
+                        );
+                        _loadData();
+                      },
+                      child: Container(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 18,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.surface,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: AppColors.primary.withValues(alpha: 0.25),
+                            width: 1.5,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                color: AppColors.primary.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(
+                                  color: AppColors.primary.withValues(
+                                    alpha: 0.3,
+                                  ),
+                                ),
+                              ),
+                              child: const Icon(
+                                Icons.fitness_center,
+                                color: AppColors.primary,
+                                size: 20,
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    routine.name,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  Text(
+                                    '${routine.exercises.length} ejercicios',
+                                    style: const TextStyle(
+                                      color: AppColors.textSecondary,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            IconButton(
+                              icon: const Icon(
+                                Icons.delete_outline,
+                                color: Colors.redAccent,
+                                size: 20,
+                              ),
+                              onPressed: () =>
+                                  _deleteAssignment(assignment, routine),
+                            ),
+                            const Icon(
+                              Icons.chevron_right,
+                              color: AppColors.textSecondary,
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }),
+              ],
             ),
       floatingActionButton: FloatingActionButton(
         backgroundColor: AppColors.primary,
@@ -655,5 +773,67 @@ class _AlumnoDetailScreenState extends State<AlumnoDetailScreen> {
         ),
       ],
     );
+  }
+
+  void _showUnlinkDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.backgroundAppBar,
+        title: const Text(
+          'Desvincular alumno',
+          style: TextStyle(color: Colors.white),
+        ),
+        content: Text(
+          '¿Querés desvincular a ${widget.alumno.name}?',
+          style: const TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text(
+              'Cancelar',
+              style: TextStyle(color: Colors.white60),
+            ),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await _unlink();
+            },
+            child: const Text(
+              'Desvincular',
+              style: TextStyle(color: Colors.redAccent),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _unlink() async {
+    final trainerProfile = await UserService.getCurrentProfile();
+    if (trainerProfile == null) return;
+
+    await LinkService.unlinkTrainer(
+      trainerId: AuthService.currentUser!.uid,
+      alumnoId: widget.alumno.uid,
+    );
+
+    await NotificationService.sendUnlinkNotification(
+      targetUid: widget.alumno.uid,
+      senderName: trainerProfile.name,
+      role: 'trainer',
+    );
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Te desvinculaste de ${widget.alumno.name}'),
+          backgroundColor: AppColors.primary.withValues(alpha: 0.8),
+        ),
+      );
+      Navigator.pop(context);
+    }
   }
 }

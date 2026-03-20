@@ -13,6 +13,7 @@ import 'package:mjolnir/screens/students_screen.dart';
 import 'package:mjolnir/screens/notifications_screen.dart';
 import 'package:mjolnir/services/notification_service.dart';
 import 'package:mjolnir/screens/profile_screen.dart';
+import 'package:mjolnir/screens/trainers_screen.dart';
 
 class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({super.key});
@@ -207,71 +208,66 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     );
   }
 
-  Widget _buildGrid() {
-    final isTrainer = _profile?.role == 'trainer';
+Widget _buildGrid() {
+  final isTrainer = _profile?.role == 'trainer';
 
-    final buttons = [
-      GridButton(
-        label: 'RUTINAS',
-        subtitle: isTrainer ? 'Gestionar rutinas' : 'Ver mis rutinas',
-        icon: Icons.fitness_center,
-        onPressed: () => Navigator.push(
+  final buttons = [
+    GridButton(
+      label: 'RUTINAS',
+      subtitle: isTrainer ? 'Gestionar rutinas' : 'Ver mis rutinas',
+      icon: Icons.fitness_center,
+      onPressed: () => Navigator.push(context,
+          MaterialPageRoute(builder: (_) => const RoutineScreen())),
+    ),
+    GridButton(
+      label: 'EJERCICIOS',
+      subtitle: 'Catálogo',
+      icon: Icons.format_list_bulleted,
+      onPressed: () => Navigator.push(context,
+          MaterialPageRoute(builder: (_) => const ExerciseScreen())),
+    ),
+    GridButton(
+      label: 'PROGRESO',
+      subtitle: 'Ver evolución',
+      icon: Icons.show_chart,
+      onPressed: () => Navigator.push(context,
+          MaterialPageRoute(builder: (_) => const ProgressScreen())),
+    ),
+    GridButton(
+      label: isTrainer ? 'ALUMNOS' : 'TRAINERS',
+      subtitle: 'Gestionar',
+      icon: isTrainer ? Icons.people_outline : Icons.sports,
+      onPressed: () => Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => const RoutineScreen()),
-        ),
-      ),
-      GridButton(
-        label: 'EJERCICIOS',
-        subtitle: 'Catálogo',
-        icon: Icons.format_list_bulleted,
-        onPressed: () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const ExerciseScreen()),
-        ),
-      ),
-      GridButton(
-        label: 'PROGRESO',
-        subtitle: 'Ver evolución',
-        icon: Icons.show_chart,
-        onPressed: () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const ProgressScreen()),
-        ),
-      ),
-      if (isTrainer)
-        GridButton(
-          label: 'ALUMNOS',
-          subtitle: 'Gestionar',
-          icon: Icons.people_outline,
-          onPressed: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const StudentsScreen()),
-          ),
-        )
-      else
-        GridButton(
-          label: 'CONFIG',
-          subtitle: 'Preferencias',
-          icon: Icons.settings_outlined,
-          onPressed: () async {
-            await Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const ConfigScreen()),
-            );
-            _loadProfile();
-          },
-        ),
-    ];
+          MaterialPageRoute(
+              builder: (_) => isTrainer
+                  ? const StudentsScreen()
+                  : const TrainersScreen())),
+    ),
+    GridButton(
+      label: 'ALIMENTACIÓN',
+      subtitle: 'Próximamente',
+      icon: Icons.restaurant_outlined,
+      onPressed: () {},
+    ),
+    GridButton(
+      label: 'CONFIG',
+      subtitle: 'Preferencias',
+      icon: Icons.settings_outlined,
+      onPressed: () => Navigator.push(context,
+          MaterialPageRoute(builder: (_) => const ConfigScreen())),
+    ),
+  ];
 
-    return GridView.count(
-      crossAxisCount: 2,
-      mainAxisSpacing: 14,
-      crossAxisSpacing: 14,
-      childAspectRatio: 0.95,
-      physics: const NeverScrollableScrollPhysics(),
-      children: buttons,
-    );
-  }
+return GridView.count(
+  crossAxisCount: 2,
+  mainAxisSpacing: 10,
+  crossAxisSpacing: 10,
+  childAspectRatio: 1.1,
+  physics: const NeverScrollableScrollPhysics(),
+  children: buttons,
+);
+}
 }
 
 class _HammerPainter extends CustomPainter {
