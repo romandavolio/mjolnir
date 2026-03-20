@@ -13,7 +13,9 @@ Permite a trainers y alumnos gestionar ejercicios, rutinas y registrar el progre
 - Perfiles diferenciados: trainer y alumno
 - Datos personales: fecha de nacimiento, altura, peso, objetivo, nivel de experiencia y lesiones
 - Vinculación trainer-alumno mediante solicitudes
-- Notificaciones push para solicitudes de vinculación pendientes
+- Múltiples trainers por alumno — cada trainer es independiente
+- Desvinculación desde ambos lados con notificación a la contraparte
+- Notificaciones push para solicitudes y desvinculaciones
 - Onboarding para nuevos usuarios
 
 ### Trainer
@@ -22,14 +24,18 @@ Permite a trainers y alumnos gestionar ejercicios, rutinas y registrar el progre
 - Asignación de rutinas a alumnos
 - Visualización de pesos y progreso registrados por el alumno
 - Visualización del historial de peso corporal del alumno
+- Visualización de rutinas compartidas por el alumno
 - Edición de rutinas asignadas
 - Eliminación de rutinas sin pesos cargados
 
 ### Alumno
+- Gestión de trainers vinculados con opción de desvincular
 - Recepción y gestión de solicitudes de vinculación
-- Visualización de rutinas asignadas por el trainer
+- Compartir rutinas propias con trainers vinculados
+- Visualización de rutinas asignadas por el trainer con nombre del trainer
 - Creación de rutinas propias
 - Registro de pesos por serie
+- Aviso al entrar a rutinas si tiene rutinas de trainers desvinculados
 
 ### Ejercicios y rutinas
 - Catálogo global de ejercicios por músculo, equipamiento y variante
@@ -47,6 +53,7 @@ Permite a trainers y alumnos gestionar ejercicios, rutinas y registrar el progre
 ### Configuración
 - Unidad de peso configurable (kg / lb) sincronizada en la nube
 - Edición de perfil personal
+- Pantalla de perfil con acceso al historial de peso corporal
 
 ## Tecnologías
 
@@ -61,8 +68,8 @@ Permite a trainers y alumnos gestionar ejercicios, rutinas y registrar el progre
 ## En desarrollo
 
 - Foto de perfil de usuario
+- Sección de alimentación
 - Plantillas de rutinas predefinidas por grupo muscular
-- Múltiples trainers por alumno
 
 ## Capturas
 
