@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:mjolnir/models/assigned_routine.dart';
 import 'package:mjolnir/models/exercise.dart';
 import 'package:mjolnir/models/routine.dart';
+import 'package:mjolnir/models/serie.dart';
 import 'package:mjolnir/models/weight_entry.dart';
 import 'package:mjolnir/services/auth_service.dart';
 import 'package:mjolnir/models/routine_exercise.dart';
@@ -347,5 +348,36 @@ class RoutineService {
 
     if (snapshot.docs.isEmpty) return null;
     return DateTime.parse(snapshot.docs.first.data()['date'] as String);
+  }
+
+  static Future<Routine> duplicateRoutine(
+    Routine routine, {
+    String? name,
+  }) async {
+    final uid = AuthService.currentUser?.uid;
+    if (uid == null) throw Exception('No user');
+
+    final newId = DateTime.now().millisecondsSinceEpoch.toString();
+    final copy = Routine(
+      id: newId,
+      name: name ?? '${routine.name} (copia)',
+      exercises: routine.exercises
+          .map(
+            (re) => RoutineExercise(
+              exercise: re.exercise,
+              series: re.series.map((s) => Serie(reps: s.reps)).toList(),
+            ),
+          )
+          .toList(),
+    );
+
+    await _db
+        .collection('usuarios')
+        .doc(uid)
+        .collection('rutinas')
+        .doc(newId)
+        .set(copy.toJson());
+
+    return copy;
   }
 }

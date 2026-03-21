@@ -21,7 +21,6 @@ class _RoutineScreenState extends State<RoutineScreen> {
   List<UserProfile> _linkedTrainers = [];
   UserProfile? _profile;
   bool _loading = true;
-  bool _checkedUnlinkedTrainers = false;
 
   @override
   void initState() {
@@ -40,16 +39,25 @@ class _RoutineScreenState extends State<RoutineScreen> {
       final assignments = await RoutineService.getAssignedToAlumno(
         profile!.uid,
       );
-      for (final assignment in assignments) {
-        final routine = await RoutineService.loadRoutine(
+
+      // Cargar todas las rutinas en paralelo
+      final routineFutures = assignments.map(
+        (assignment) => RoutineService.loadRoutine(
           assignment.trainerId,
           assignment.rutinaId,
-        );
-        if (routine != null) {
-          assignedRoutines.add(MapEntry(assignment.trainerName, routine));
+        ),
+      );
+      final routines = await Future.wait(routineFutures);
+
+      for (int i = 0; i < assignments.length; i++) {
+        if (routines[i] != null) {
+          assignedRoutines.add(
+            MapEntry(assignments[i].trainerName, routines[i]!),
+          );
         }
       }
-      // Cargar trainers vinculados
+
+      // Cargar trainers en paralelo con las rutinas
       final linkedAlumnos = await LinkService.getLinkedTrainers(profile.uid);
       linkedTrainers = linkedAlumnos;
     }
@@ -107,9 +115,13 @@ class _RoutineScreenState extends State<RoutineScreen> {
                 id: DateTime.now().millisecondsSinceEpoch.toString(),
                 name: name,
               );
-              await RoutineService.saveRoutine(routine);
+
+              // Agregar al estado inmediatamente sin esperar Firestore
               setState(() => _myRoutines.add(routine));
               Navigator.pop(context);
+
+              // Guardar en Firestore en segundo plano
+              RoutineService.saveRoutine(routine);
             },
             child: Text('Crear', style: TextStyle(color: AppColors.primary)),
           ),
@@ -455,6 +467,23 @@ class _RoutineScreenState extends State<RoutineScreen> {
               ),
             if (!assigned)
               IconButton(
+                icon: Icon(
+                  Icons.edit_outlined,
+                  color: AppColors.textSecondary,
+                  size: 20,
+                ),
+                onPressed: () => _editRoutineName(routine),
+              ),
+            IconButton(
+              icon: const Icon(
+                Icons.copy_outlined,
+                color: AppColors.textSecondary,
+                size: 20,
+              ),
+              onPressed: () => _duplicateRoutine(routine),
+            ),
+            if (!assigned)
+              IconButton(
                 icon: const Icon(
                   Icons.delete_outline,
                   color: Colors.redAccent,
@@ -534,6 +563,119 @@ class _RoutineScreenState extends State<RoutineScreen> {
               'Eliminar',
               style: TextStyle(color: Colors.redAccent),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _duplicateRoutine(Routine routine) async {
+    final controller = TextEditingController(text: '${routine.name} (copia)');
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.backgroundAppBar,
+        title: const Text(
+          'Duplicar rutina',
+          style: TextStyle(color: Colors.white),
+        ),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          style: const TextStyle(color: Colors.white),
+          decoration: InputDecoration(
+            labelText: 'Nombre de la copia',
+            labelStyle: TextStyle(color: AppColors.textSecondary),
+            enabledBorder: UnderlineInputBorder(
+              borderSide: BorderSide(color: AppColors.primary),
+            ),
+            focusedBorder: UnderlineInputBorder(
+              borderSide: BorderSide(color: AppColors.primary),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text(
+              'Cancelar',
+              style: TextStyle(color: Colors.white60),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text('Duplicar', style: TextStyle(color: AppColors.primary)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    final name = controller.text.trim().isEmpty
+        ? '${routine.name} (copia)'
+        : controller.text.trim();
+
+    final copy = await RoutineService.duplicateRoutine(routine, name: name);
+    if (!mounted) return;
+
+    setState(() => _myRoutines.add(copy));
+
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => RoutineDetailScreen(
+          routine: copy,
+          onSave: () => RoutineService.saveRoutine(copy),
+        ),
+      ),
+    );
+    _loadData();
+  }
+
+  void _editRoutineName(Routine routine) {
+    final controller = TextEditingController(text: routine.name);
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.backgroundAppBar,
+        title: const Text(
+          'Editar nombre',
+          style: TextStyle(color: Colors.white),
+        ),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          style: const TextStyle(color: Colors.white),
+          decoration: InputDecoration(
+            labelText: 'Nombre de la rutina',
+            labelStyle: TextStyle(color: AppColors.textSecondary),
+            enabledBorder: UnderlineInputBorder(
+              borderSide: BorderSide(color: AppColors.primary),
+            ),
+            focusedBorder: UnderlineInputBorder(
+              borderSide: BorderSide(color: AppColors.primary),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text(
+              'Cancelar',
+              style: TextStyle(color: Colors.white60),
+            ),
+          ),
+          TextButton(
+            onPressed: () async {
+              final name = controller.text.trim();
+              if (name.isEmpty) return;
+              setState(() => routine.name = name);
+              Navigator.pop(context);
+              RoutineService.saveRoutine(routine);
+            },
+            child: Text('Guardar', style: TextStyle(color: AppColors.primary)),
           ),
         ],
       ),
