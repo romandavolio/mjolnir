@@ -298,4 +298,54 @@ class RoutineService {
       await doc.reference.delete();
     }
   }
+
+  static Future<void> updateExerciseInRoutines(
+    Exercise oldExercise,
+    Exercise newExercise,
+  ) async {
+    final uid = AuthService.currentUser?.uid;
+    if (uid == null) return;
+
+    final snapshot = await _db
+        .collection('usuarios')
+        .doc(uid)
+        .collection('rutinas')
+        .get();
+
+    for (final doc in snapshot.docs) {
+      final routine = Routine.fromJson(doc.data());
+      bool changed = false;
+
+      for (final re in routine.exercises) {
+        if (re.exercise.name == oldExercise.name) {
+          re.exercise = newExercise;
+          changed = true;
+        }
+      }
+
+      if (changed) {
+        await _db
+            .collection('usuarios')
+            .doc(uid)
+            .collection('rutinas')
+            .doc(routine.id)
+            .set(routine.toJson());
+      }
+    }
+  }
+
+  static Future<DateTime?> getLastTrainingDate() async {
+    final uid = AuthService.currentUser?.uid;
+    if (uid == null) return null;
+
+    final snapshot = await _db
+        .collection('historial')
+        .where('uid', isEqualTo: uid)
+        .orderBy('date', descending: true)
+        .limit(1)
+        .get();
+
+    if (snapshot.docs.isEmpty) return null;
+    return DateTime.parse(snapshot.docs.first.data()['date'] as String);
+  }
 }

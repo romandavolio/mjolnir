@@ -8,6 +8,7 @@ import 'package:mjolnir/screens/exercise_screen.dart';
 import 'package:mjolnir/screens/progress_screen.dart';
 import 'package:mjolnir/screens/routine_screen.dart';
 import 'package:mjolnir/services/auth_service.dart';
+import 'package:mjolnir/services/routine_service.dart';
 import 'package:mjolnir/services/user_service.dart';
 import 'package:mjolnir/screens/students_screen.dart';
 import 'package:mjolnir/screens/notifications_screen.dart';
@@ -26,6 +27,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   UserProfile? _profile;
   bool _loading = true;
   int _unreadNotifications = 0;
+  DateTime? _lastTraining;
 
   @override
   void initState() {
@@ -37,10 +39,12 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   Future<void> _loadProfile() async {
     final profile = await UserService.getCurrentProfile();
     final notifications = await NotificationService.getUnreadNotifications();
+    final lastTraining = await RoutineService.getLastTrainingDate();
     if (!mounted) return;
     setState(() {
       _profile = profile;
       _unreadNotifications = notifications.length;
+      _lastTraining = lastTraining;
       _loading = false;
     });
   }
@@ -107,7 +111,6 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
               ),
             ),
             const Spacer(),
-            // Nombre y logout
             if (_profile != null)
               Row(
                 children: [
@@ -190,6 +193,18 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
             ),
           ),
         ),
+        if (_profile?.role == 'alumno' && _lastTraining != null)
+          Padding(
+            padding: const EdgeInsets.only(left: 44, top: 4),
+            child: Text(
+              'Último entrenamiento: ${_lastTraining!.day}/${_lastTraining!.month}/${_lastTraining!.year}',
+              style: const TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 10,
+                letterSpacing: 1,
+              ),
+            ),
+          ),
       ],
     );
   }
@@ -208,66 +223,75 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     );
   }
 
-Widget _buildGrid() {
-  final isTrainer = _profile?.role == 'trainer';
+  Widget _buildGrid() {
+    final isTrainer = _profile?.role == 'trainer';
 
-  final buttons = [
-    GridButton(
-      label: 'RUTINAS',
-      subtitle: isTrainer ? 'Gestionar rutinas' : 'Ver mis rutinas',
-      icon: Icons.fitness_center,
-      onPressed: () => Navigator.push(context,
-          MaterialPageRoute(builder: (_) => const RoutineScreen())),
-    ),
-    GridButton(
-      label: 'EJERCICIOS',
-      subtitle: 'Catálogo',
-      icon: Icons.format_list_bulleted,
-      onPressed: () => Navigator.push(context,
-          MaterialPageRoute(builder: (_) => const ExerciseScreen())),
-    ),
-    GridButton(
-      label: 'PROGRESO',
-      subtitle: 'Ver evolución',
-      icon: Icons.show_chart,
-      onPressed: () => Navigator.push(context,
-          MaterialPageRoute(builder: (_) => const ProgressScreen())),
-    ),
-    GridButton(
-      label: isTrainer ? 'ALUMNOS' : 'TRAINERS',
-      subtitle: 'Gestionar',
-      icon: isTrainer ? Icons.people_outline : Icons.sports,
-      onPressed: () => Navigator.push(
+    final buttons = [
+      GridButton(
+        label: 'RUTINAS',
+        subtitle: isTrainer ? 'Gestionar rutinas' : 'Ver mis rutinas',
+        icon: Icons.fitness_center,
+        onPressed: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const RoutineScreen()),
+        ),
+      ),
+      GridButton(
+        label: 'EJERCICIOS',
+        subtitle: 'Catálogo',
+        icon: Icons.format_list_bulleted,
+        onPressed: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const ExerciseScreen()),
+        ),
+      ),
+      GridButton(
+        label: 'PROGRESO',
+        subtitle: 'Ver evolución',
+        icon: Icons.show_chart,
+        onPressed: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const ProgressScreen()),
+        ),
+      ),
+      GridButton(
+        label: isTrainer ? 'ALUMNOS' : 'TRAINERS',
+        subtitle: 'Gestionar',
+        icon: isTrainer ? Icons.people_outline : Icons.sports,
+        onPressed: () => Navigator.push(
           context,
           MaterialPageRoute(
-              builder: (_) => isTrainer
-                  ? const StudentsScreen()
-                  : const TrainersScreen())),
-    ),
-    GridButton(
-      label: 'ALIMENTACIÓN',
-      subtitle: 'Próximamente',
-      icon: Icons.restaurant_outlined,
-      onPressed: () {},
-    ),
-    GridButton(
-      label: 'CONFIG',
-      subtitle: 'Preferencias',
-      icon: Icons.settings_outlined,
-      onPressed: () => Navigator.push(context,
-          MaterialPageRoute(builder: (_) => const ConfigScreen())),
-    ),
-  ];
+            builder: (_) =>
+                isTrainer ? const StudentsScreen() : const TrainersScreen(),
+          ),
+        ),
+      ),
+      GridButton(
+        label: 'ALIMENTACIÓN',
+        subtitle: 'Próximamente',
+        icon: Icons.restaurant_outlined,
+        onPressed: () {},
+      ),
+      GridButton(
+        label: 'CONFIG',
+        subtitle: 'Preferencias',
+        icon: Icons.settings_outlined,
+        onPressed: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const ConfigScreen()),
+        ),
+      ),
+    ];
 
-return GridView.count(
-  crossAxisCount: 2,
-  mainAxisSpacing: 10,
-  crossAxisSpacing: 10,
-  childAspectRatio: 1.1,
-  physics: const NeverScrollableScrollPhysics(),
-  children: buttons,
-);
-}
+    return GridView.count(
+      crossAxisCount: 2,
+      mainAxisSpacing: 10,
+      crossAxisSpacing: 10,
+      childAspectRatio: 1.1,
+      physics: const NeverScrollableScrollPhysics(),
+      children: buttons,
+    );
+  }
 }
 
 class _HammerPainter extends CustomPainter {

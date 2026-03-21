@@ -2,7 +2,7 @@ import 'package:mjolnir/models/exercise.dart';
 import 'package:mjolnir/models/serie.dart';
 
 class RoutineExercise {
-  final Exercise exercise;
+  Exercise exercise;
   List<Serie> series;
 
   RoutineExercise({

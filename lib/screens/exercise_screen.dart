@@ -201,6 +201,14 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
                   variant: selectedVariant ?? '',
                 );
 
+                // Si es una edición, propagar cambios a rutinas
+                if (index != null) {
+                  await RoutineService.updateExerciseInRoutines(
+                    exercises[index],
+                    exercise,
+                  );
+                }
+
                 setState(() {
                   if (index != null) {
                     exercises[index] = exercise;
