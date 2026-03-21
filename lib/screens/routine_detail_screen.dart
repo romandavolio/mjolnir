@@ -6,6 +6,7 @@ import 'package:mjolnir/models/routine.dart';
 import 'package:mjolnir/models/routine_exercise.dart';
 import 'package:mjolnir/models/serie.dart';
 import 'package:mjolnir/services/routine_service.dart';
+import 'package:flutter/cupertino.dart';
 
 class RoutineDetailScreen extends StatefulWidget {
   final Routine routine;
@@ -67,7 +68,7 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
         ? existing.series
               .map((s) => TextEditingController(text: s.reps.toString()))
               .toList()
-        : [TextEditingController()];
+        : [TextEditingController(text: '10')];
 
     showDialog(
       context: context,
@@ -122,24 +123,130 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
                         ),
                         const SizedBox(width: 12),
                         Expanded(
-                          child: TextField(
-                            controller: controller,
-                            keyboardType: TextInputType.number,
-                            style: const TextStyle(color: Colors.white),
-                            decoration: InputDecoration(
-                              labelText: 'Repeticiones',
-                              labelStyle: TextStyle(
-                                color: AppColors.textSecondary,
+                          child: GestureDetector(
+                            onTap: () {
+                              int tempReps =
+                                  int.tryParse(controller.text) ?? 10;
+                              showModalBottomSheet(
+                                context: context,
+                                backgroundColor: AppColors.backgroundAppBar,
+                                shape: const RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.vertical(
+                                    top: Radius.circular(20),
+                                  ),
+                                ),
+                                builder: (ctx) => Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 20,
+                                        vertical: 12,
+                                      ),
+                                      child: Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          TextButton(
+                                            onPressed: () => Navigator.pop(ctx),
+                                            child: const Text(
+                                              'Cancelar',
+                                              style: TextStyle(
+                                                color: Colors.white60,
+                                              ),
+                                            ),
+                                          ),
+                                          const Text(
+                                            'REPETICIONES',
+                                            style: TextStyle(
+                                              color: AppColors.textSecondary,
+                                              fontSize: 11,
+                                              letterSpacing: 1.5,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                          TextButton(
+                                            onPressed: () {
+                                              controller.text = tempReps
+                                                  .toString();
+                                              setDialogState(() {});
+                                              Navigator.pop(ctx);
+                                            },
+                                            child: Text(
+                                              'Listo',
+                                              style: TextStyle(
+                                                color: AppColors.primary,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    SizedBox(
+                                      height: 200,
+                                      child: CupertinoPicker(
+                                        scrollController:
+                                            FixedExtentScrollController(
+                                              initialItem: tempReps - 1,
+                                            ),
+                                        itemExtent: 40,
+                                        onSelectedItemChanged: (index) {
+                                          tempReps = index + 1;
+                                        },
+                                        children: List.generate(
+                                          50,
+                                          (i) => Center(
+                                            child: Text(
+                                              '${i + 1} reps',
+                                              style: const TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 20,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 20),
+                                  ],
+                                ),
+                              );
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 12,
                               ),
-                              enabledBorder: UnderlineInputBorder(
-                                borderSide: BorderSide(
-                                  color: AppColors.primary,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: AppColors.primary.withValues(
+                                    alpha: 0.4,
+                                  ),
                                 ),
                               ),
-                              focusedBorder: UnderlineInputBorder(
-                                borderSide: BorderSide(
-                                  color: AppColors.primary,
-                                ),
+                              child: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    controller.text.isEmpty
+                                        ? 'Seleccionar reps'
+                                        : '${controller.text} reps',
+                                    style: TextStyle(
+                                      color: controller.text.isEmpty
+                                          ? AppColors.textSecondary
+                                          : Colors.white,
+                                      fontSize: 15,
+                                    ),
+                                  ),
+                                  Icon(
+                                    Icons.expand_more,
+                                    color: AppColors.textSecondary,
+                                    size: 20,
+                                  ),
+                                ],
                               ),
                             ),
                           ),
@@ -148,7 +255,7 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
                           IconButton(
                             icon: const Icon(
                               Icons.remove_circle_outline,
-                              color: Colors.redAccent,
+                              color: AppColors.textSecondary,
                               size: 20,
                             ),
                             onPressed: () => setDialogState(() {
@@ -162,7 +269,13 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
                 const SizedBox(height: 4),
                 GestureDetector(
                   onTap: () => setDialogState(
-                    () => repsControllers.add(TextEditingController()),
+                    () => repsControllers.add(
+                      TextEditingController(
+                        text: repsControllers.isNotEmpty
+                            ? repsControllers.last.text
+                            : '10',
+                      ),
+                    ),
                   ),
                   child: Row(
                     children: [
@@ -896,8 +1009,8 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
                               IconButton(
                                 icon: const Icon(
                                   Icons.remove_circle_outline,
-                                  color: Colors.redAccent,
-                                  size: 18,
+                                  color: AppColors.textSecondary,
+                                  size: 20,
                                 ),
                                 onPressed: () => _removeExercise(index),
                               ),
