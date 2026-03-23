@@ -1,6 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:mjolnir/models/assigned_routine.dart';
-import 'package:mjolnir/models/exercise.dart';
 import 'package:mjolnir/models/routine.dart';
 import 'package:mjolnir/models/serie.dart';
 import 'package:mjolnir/models/weight_entry.dart';

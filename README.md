@@ -26,9 +26,10 @@ Permite a trainers y alumnos gestionar ejercicios, rutinas y registrar el progre
 ### Trainer
 - Gestión de alumnos vinculados con refresh automático
 - Visualización de datos personales del alumno
+- Último entrenamiento del alumno visible
 - Asignación de rutinas personalizadas a alumnos
 - Visualización de rutinas compartidas por el alumno
-- Visualización de pesos y progreso registrados por el alumno
+- Visualización de pesos, progreso e historial de sesiones del alumno
 - Visualización del historial de peso corporal del alumno
 - Edición de rutinas asignadas
 - Eliminación de rutinas sin pesos cargados
@@ -38,14 +39,13 @@ Permite a trainers y alumnos gestionar ejercicios, rutinas y registrar el progre
 - Recepción y gestión de solicitudes de vinculación
 - Visualización de rutinas asignadas con nombre del trainer
 - Compartir rutinas propias con trainers vinculados
-- Creación y edición de rutinas propias
+- Creación, edición y duplicación de rutinas propias
 - Registro de pesos por serie con selector deslizable (enteros + decimales .25/.50/.75, hasta 500kg)
 
 ### Ejercicios y rutinas
-- Catálogo global de ejercicios por músculo, equipamiento y variante
-- Búsqueda en el catálogo de ejercicios
-- Reordenamiento de ejercicios por arrastre
-- Propagación automática de cambios del catálogo a rutinas existentes
+- Catálogo global de ejercicios con navegación jerárquica: músculo → elemento → acompañamiento → ejercicio
+- Solo lectura — el catálogo es administrado por el desarrollador
+- Reordenamiento de ejercicios por arrastre dentro de una rutina
 - Rutinas con series configurables mediante selector deslizable (1-50 reps)
 - Series con valor por defecto igual a la serie anterior
 - Duplicar rutinas con nombre personalizado
@@ -56,6 +56,7 @@ Permite a trainers y alumnos gestionar ejercicios, rutinas y registrar el progre
 - Historial de progreso con gráfico de evolución por ejercicio
 - Récords personales por ejercicio visibles en la lista
 - Progreso mensual comparativo
+- Historial de sesiones de entrenamiento agrupadas por día
 - Historial de peso corporal con gráfico de evolución y comparativa desde el inicio
 - Último día de entrenamiento visible en la pantalla principal
 
@@ -66,7 +67,7 @@ Permite a trainers y alumnos gestionar ejercicios, rutinas y registrar el progre
 ## Arquitectura
 ```
 lib/
-  core/           # Colores y datos de músculos
+  core/           # Colores y catálogo global de ejercicios (ExerciseCatalog)
   models/         # UserProfile, Routine, Exercise, Serie, AssignedRoutine, BodyWeightEntry, WeightEntry, LinkRequest
   screens/        # Todas las pantallas de la app
   services/       # AuthService, RoutineService, LinkService, UserService, NotificationService, BodyWeightService, StatsService
@@ -75,6 +76,7 @@ lib/
 
 ## Decisiones de arquitectura
 - Lógica en screens (no controllers) — válido para escala actual
+- Catálogo de ejercicios hardcodeado en el cliente — sin posibilidad de edición por usuarios
 - Firestore como fuente de verdad — shared_preferences solo para preferencias locales
 - Modo offline habilitado con persistencia automática de Firestore
 - Reglas de seguridad de Firestore configuradas por colección
@@ -92,9 +94,7 @@ lib/
 
 - Foto de perfil — requiere plan de pago en Firebase Storage
 - Sección de alimentación
-- Plantillas de rutinas predefinidas por grupo muscular
 - Timer de descanso entre series
-- Historial de sesiones de entrenamiento
 - Notas por rutina o ejercicio
 
 ## Cómo correrlo
