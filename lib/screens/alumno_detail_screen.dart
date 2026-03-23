@@ -27,6 +27,7 @@ class _AlumnoDetailScreenState extends State<AlumnoDetailScreen> {
   List<MapEntry<AssignedRoutine, Routine>> _assignedRoutines = [];
   List<MapEntry<AssignedRoutine, Routine>> _sharedRoutines = [];
   bool _loading = true;
+  DateTime? _lastTraining;
 
   @override
   void initState() {
@@ -69,12 +70,16 @@ class _AlumnoDetailScreenState extends State<AlumnoDetailScreen> {
         }
       }
     }
+    final lastTraining = await RoutineService.getLastTrainingDateForUser(
+      widget.alumno.uid,
+    );
     if (!mounted) return;
     setState(() {
       _myRoutines = myRoutines;
       _assignedRoutines = assignedWithRoutines;
       _sharedRoutines = sharedWithRoutines;
       _loading = false;
+      _lastTraining = lastTraining;
     });
   }
 
@@ -319,6 +324,17 @@ class _AlumnoDetailScreenState extends State<AlumnoDetailScreen> {
                               fontSize: 12,
                             ),
                           ),
+                          if (_lastTraining != null)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 4),
+                              child: Text(
+                                'Último entrenamiento: ${_lastTraining!.day}/${_lastTraining!.month}/${_lastTraining!.year}',
+                                style: const TextStyle(
+                                  color: AppColors.textSecondary,
+                                  fontSize: 11,
+                                ),
+                              ),
+                            ),
                         ],
                       ),
                     ],

@@ -380,4 +380,16 @@ class RoutineService {
 
     return copy;
   }
+
+  static Future<DateTime?> getLastTrainingDateForUser(String uid) async {
+    final snapshot = await _db
+        .collection('historial')
+        .where('uid', isEqualTo: uid)
+        .orderBy('date', descending: true)
+        .limit(1)
+        .get();
+
+    if (snapshot.docs.isEmpty) return null;
+    return DateTime.parse(snapshot.docs.first.data()['date'] as String);
+  }
 }
