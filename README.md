@@ -1,6 +1,6 @@
 # Mjolnir 💪
 
-Aplicación móvil para gestión de rutinas de gimnasio, desarrollada con Flutter.
+Aplicación móvil para gestión de rutinas de gimnasio, desarrollada con Flutter y Firebase.
 
 ## ¿Qué hace?
 
@@ -12,48 +12,72 @@ Permite a trainers y alumnos gestionar ejercicios, rutinas y registrar el progre
 - Registro e inicio de sesión con email y contraseña
 - Perfiles diferenciados: trainer y alumno
 - Datos personales: fecha de nacimiento, altura, peso, objetivo, nivel de experiencia y lesiones
-- Vinculación trainer-alumno mediante solicitudes
-- Múltiples trainers por alumno — cada trainer es independiente
-- Desvinculación desde ambos lados con notificación a la contraparte
-- Notificaciones push para solicitudes y desvinculaciones
+- Pantalla de perfil con acceso al historial de peso corporal
+- Edición de perfil personal
 - Onboarding para nuevos usuarios
 
+### Vinculación trainer-alumno
+- Solicitudes de vinculación con notificaciones push
+- Múltiples trainers por alumno — cada trainer es independiente
+- Desvinculación desde ambos lados con notificación a la contraparte
+- El alumno puede compartir rutinas propias con sus trainers
+- Aviso automático si el alumno tiene rutinas de trainers desvinculados
+
 ### Trainer
-- Gestión de alumnos vinculados
+- Gestión de alumnos vinculados con refresh automático
 - Visualización de datos personales del alumno
-- Asignación de rutinas a alumnos
+- Asignación de rutinas personalizadas a alumnos
+- Visualización de rutinas compartidas por el alumno
 - Visualización de pesos y progreso registrados por el alumno
 - Visualización del historial de peso corporal del alumno
-- Visualización de rutinas compartidas por el alumno
 - Edición de rutinas asignadas
 - Eliminación de rutinas sin pesos cargados
 
 ### Alumno
 - Gestión de trainers vinculados con opción de desvincular
 - Recepción y gestión de solicitudes de vinculación
+- Visualización de rutinas asignadas con nombre del trainer
 - Compartir rutinas propias con trainers vinculados
-- Visualización de rutinas asignadas por el trainer con nombre del trainer
-- Creación de rutinas propias
-- Registro de pesos por serie
-- Aviso al entrar a rutinas si tiene rutinas de trainers desvinculados
+- Creación y edición de rutinas propias
+- Registro de pesos por serie con selector deslizable (enteros + decimales .25/.50/.75, hasta 500kg)
 
 ### Ejercicios y rutinas
 - Catálogo global de ejercicios por músculo, equipamiento y variante
 - Búsqueda en el catálogo de ejercicios
 - Reordenamiento de ejercicios por arrastre
-- Rutinas con series de repeticiones personalizadas por ejercicio
-- Registro de peso individual por serie
+- Propagación automática de cambios del catálogo a rutinas existentes
+- Rutinas con series configurables mediante selector deslizable (1-50 reps)
+- Series con valor por defecto igual a la serie anterior
+- Duplicar rutinas con nombre personalizado
+- Editar nombre de rutinas existentes
+- Registro de peso individual por serie con selector deslizable
 
 ### Progreso y estadísticas
 - Historial de progreso con gráfico de evolución por ejercicio
-- Récords personales por ejercicio
+- Récords personales por ejercicio visibles en la lista
 - Progreso mensual comparativo
-- Historial de peso corporal con gráfico de evolución
+- Historial de peso corporal con gráfico de evolución y comparativa desde el inicio
+- Último día de entrenamiento visible en la pantalla principal
 
 ### Configuración
 - Unidad de peso configurable (kg / lb) sincronizada en la nube
 - Edición de perfil personal
-- Pantalla de perfil con acceso al historial de peso corporal
+
+## Arquitectura
+```
+lib/
+  core/           # Colores y datos de músculos
+  models/         # UserProfile, Routine, Exercise, Serie, AssignedRoutine, BodyWeightEntry, WeightEntry, LinkRequest
+  screens/        # Todas las pantallas de la app
+  services/       # AuthService, RoutineService, LinkService, UserService, NotificationService, BodyWeightService, StatsService
+  components/     # Widgets reutilizables
+```
+
+## Decisiones de arquitectura
+- Lógica en screens (no controllers) — válido para escala actual
+- Firestore como fuente de verdad — shared_preferences solo para preferencias locales
+- Modo offline habilitado con persistencia automática de Firestore
+- Reglas de seguridad de Firestore configuradas por colección
 
 ## Tecnologías
 
@@ -61,22 +85,17 @@ Permite a trainers y alumnos gestionar ejercicios, rutinas y registrar el progre
 - Firebase Auth — autenticación
 - Cloud Firestore — base de datos en la nube con reglas de seguridad y modo offline
 - Firebase Cloud Messaging — notificaciones push
-- shared_preferences — preferencias locales del dispositivo
+- shared_preferences — preferencias locales
 - fl_chart — gráficos de progreso
-- Arquitectura por capas: models, screens, components, services, core
 
 ## En desarrollo
 
-- Foto de perfil de usuario
+- Foto de perfil — requiere plan de pago en Firebase Storage
 - Sección de alimentación
 - Plantillas de rutinas predefinidas por grupo muscular
-
-## Capturas
-
-![Pantalla de login](login_screen.png)
-![Pantalla de inicio](welcome_screen.png)
-![Pantalla de rutinas](routine_screen.png)
-![Pantalla de detalles de rutinas](routine_detail_screen.png)
+- Timer de descanso entre series
+- Historial de sesiones de entrenamiento
+- Notas por rutina o ejercicio
 
 ## Cómo correrlo
 
@@ -96,4 +115,4 @@ Permite a trainers y alumnos gestionar ejercicios, rutinas y registrar el progre
 
 ## Autor
 
-Román Davolio — [LinkedIn](https://www.linkedin.com/in/roman-davolio/)
+Román Davolio — [LinkedIn](https://www.linkedin.com/in/roman-davolio/) — [GitHub](https://github.com/romandavolio/mjolnir)
