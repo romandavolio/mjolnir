@@ -7,7 +7,6 @@ import 'package:mjolnir/models/routine_exercise.dart';
 import 'package:mjolnir/models/serie.dart';
 import 'package:mjolnir/services/routine_service.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:mjolnir/core/muscle_data.dart';
 
 class RoutineDetailScreen extends StatefulWidget {
   final Routine routine;
@@ -889,31 +888,6 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildChip(String label, bool isSelected) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: isSelected
-            ? AppColors.primary.withValues(alpha: 0.2)
-            : AppColors.surface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: isSelected
-              ? AppColors.primary
-              : AppColors.primary.withValues(alpha: 0.2),
-        ),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          color: isSelected ? AppColors.primary : AppColors.textSecondary,
-          fontSize: 12,
-          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
         ),
       ),
     );
