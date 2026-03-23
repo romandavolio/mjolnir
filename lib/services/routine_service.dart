@@ -210,45 +210,6 @@ class RoutineService {
         .toList();
   }
 
-  static Future<void> saveExercises(List<Exercise> exercises) async {
-    final uid = AuthService.currentUser?.uid;
-    if (uid == null) return;
-    final batch = _db.batch();
-
-    // Primero eliminamos todos los ejercicios existentes
-    final existing = await _db
-        .collection('usuarios')
-        .doc(uid)
-        .collection('ejercicios')
-        .get();
-    for (final doc in existing.docs) {
-      batch.delete(doc.reference);
-    }
-
-    // Luego guardamos los nuevos
-    for (final exercise in exercises) {
-      final ref = _db
-          .collection('usuarios')
-          .doc(uid)
-          .collection('ejercicios')
-          .doc(exercise.name);
-      batch.set(ref, exercise.toJson());
-    }
-
-    await batch.commit();
-  }
-
-  static Future<List<Exercise>> loadExercises() async {
-    final uid = AuthService.currentUser?.uid;
-    if (uid == null) return [];
-    final snapshot = await _db
-        .collection('usuarios')
-        .doc(uid)
-        .collection('ejercicios')
-        .get();
-    return snapshot.docs.map((d) => Exercise.fromJson(d.data())).toList();
-  }
-
   // Compartir rutina del alumno con un trainer
   static Future<void> shareRoutineWithTrainer({
     required String trainerId,
@@ -297,41 +258,6 @@ class RoutineService {
         .get();
     for (final doc in snapshot.docs) {
       await doc.reference.delete();
-    }
-  }
-
-  static Future<void> updateExerciseInRoutines(
-    Exercise oldExercise,
-    Exercise newExercise,
-  ) async {
-    final uid = AuthService.currentUser?.uid;
-    if (uid == null) return;
-
-    final snapshot = await _db
-        .collection('usuarios')
-        .doc(uid)
-        .collection('rutinas')
-        .get();
-
-    for (final doc in snapshot.docs) {
-      final routine = Routine.fromJson(doc.data());
-      bool changed = false;
-
-      for (final re in routine.exercises) {
-        if (re.exercise.name == oldExercise.name) {
-          re.exercise = newExercise;
-          changed = true;
-        }
-      }
-
-      if (changed) {
-        await _db
-            .collection('usuarios')
-            .doc(uid)
-            .collection('rutinas')
-            .doc(routine.id)
-            .set(routine.toJson());
-      }
     }
   }
 

@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:mjolnir/core/app_colors.dart';
 import 'package:mjolnir/models/exercise.dart';
 import 'package:mjolnir/screens/progress_detail_screen.dart';
-import 'package:mjolnir/services/routine_service.dart';
 import 'package:mjolnir/services/stats_service.dart';
 import 'package:mjolnir/screens/body_weight_screen.dart';
+import 'package:mjolnir/core/muscle_data.dart';
 
 class ProgressScreen extends StatefulWidget {
   final String? viewAsUid;
@@ -39,7 +39,35 @@ class _ProgressScreenState extends State<ProgressScreen>
   }
 
   Future<void> _loadData() async {
-    final saved = await RoutineService.loadExercises();
+    // Cargar ejercicios del catálogo global
+    final List<Exercise> allExercises = [];
+    for (final muscle in ExerciseCatalog.muscles) {
+      final elements = ExerciseCatalog.elementsFor(muscle);
+      for (final element in elements.keys) {
+        final accompaniments = ExerciseCatalog.accompanimentFor(
+          muscle,
+          element,
+        );
+        for (final accompaniment in accompaniments.keys) {
+          final exercises = ExerciseCatalog.exercisesFor(
+            muscle,
+            element,
+            accompaniment,
+          );
+          for (final name in exercises) {
+            allExercises.add(
+              Exercise(
+                name: name,
+                muscle: muscle,
+                equipment: element,
+                variant: accompaniment,
+              ),
+            );
+          }
+        }
+      }
+    }
+
     final records = await StatsService.getPersonalRecords(
       uid: widget.viewAsUid,
     );
@@ -52,11 +80,11 @@ class _ProgressScreenState extends State<ProgressScreen>
 
     if (!mounted) return;
     setState(() {
-      exercises = saved;
+      exercises = allExercises;
       _records = records;
       _monthlyProgress = monthly;
-      _loading = false;
       _sessions = sessions;
+      _loading = false;
     });
   }
 
