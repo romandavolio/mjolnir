@@ -23,11 +23,12 @@ class _ProgressScreenState extends State<ProgressScreen>
   Map<String, Map<String, double>> _monthlyProgress = {};
   bool _loading = true;
   late TabController _tabController;
+  Map<String, List<Map<String, dynamic>>> _sessions = {};
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 4, vsync: this);
     _loadData();
   }
 
@@ -45,6 +46,9 @@ class _ProgressScreenState extends State<ProgressScreen>
     final monthly = await StatsService.getMonthlyProgress(
       uid: widget.viewAsUid,
     );
+    final sessions = await StatsService.getSessionHistory(
+      uid: widget.viewAsUid,
+    );
 
     if (!mounted) return;
     setState(() {
@@ -52,6 +56,7 @@ class _ProgressScreenState extends State<ProgressScreen>
       _records = records;
       _monthlyProgress = monthly;
       _loading = false;
+      _sessions = sessions;
     });
   }
 
@@ -72,6 +77,7 @@ class _ProgressScreenState extends State<ProgressScreen>
             Tab(text: 'EJERCICIOS'),
             Tab(text: 'ESTADÍSTICAS'),
             Tab(text: 'PESO'),
+            Tab(text: 'SESIONES'),
           ],
         ),
       ),
@@ -85,6 +91,7 @@ class _ProgressScreenState extends State<ProgressScreen>
                 _buildExerciseList(),
                 _buildStats(),
                 _buildBodyWeight(),
+                _buildSessions(),
               ],
             ),
     );
@@ -340,6 +347,123 @@ class _ProgressScreenState extends State<ProgressScreen>
 
   Widget _buildBodyWeight() {
     return BodyWeightScreen(viewAsUid: widget.viewAsUid, embedded: true);
+  }
+
+  Widget _buildSessions() {
+    if (_sessions.isEmpty) {
+      return const Center(
+        child: Text(
+          'Todavía no hay sesiones registradas.\nEmpezá a cargar pesos en tus rutinas.',
+          textAlign: TextAlign.center,
+          style: TextStyle(color: Colors.white60, fontSize: 15),
+        ),
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: _sessions.length,
+      itemBuilder: (context, index) {
+        final date = _sessions.keys.elementAt(index);
+        final entries = _sessions[date]!;
+
+        // Agrupar por ejercicio
+        final Map<String, double> exerciseMax = {};
+        for (final entry in entries) {
+          final name = entry['exerciseName'] as String;
+          final weight = (entry['weight'] as num).toDouble();
+          if (!exerciseMax.containsKey(name) || exerciseMax[name]! < weight) {
+            exerciseMax[name] = weight;
+          }
+        }
+
+        // Formatear fecha
+        final parts = date.split('-');
+        final formatted = '${parts[2]}/${parts[1]}/${parts[0]}';
+
+        return Container(
+          margin: const EdgeInsets.only(bottom: 16),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: AppColors.primary.withValues(alpha: 0.25),
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.calendar_today,
+                      color: AppColors.primary,
+                      size: 14,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      formatted,
+                      style: TextStyle(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
+                    ),
+                    const Spacer(),
+                    Text(
+                      '${exerciseMax.length} ejercicios',
+                      style: const TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(color: Colors.white10, height: 1),
+              ...exerciseMax.entries.map(
+                (entry) => Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 10,
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.fitness_center,
+                        color: AppColors.textSecondary,
+                        size: 14,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          entry.key,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ),
+                      Text(
+                        'Máx: ${entry.value} kg',
+                        style: TextStyle(
+                          color: AppColors.primary,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 4),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   Widget _sectionLabel(String label) {

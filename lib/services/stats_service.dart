@@ -5,9 +5,7 @@ class StatsService {
   static final _db = FirebaseFirestore.instance;
 
   // Récord personal por ejercicio
-  static Future<Map<String, double>> getPersonalRecords({
-    String? uid,
-  }) async {
+  static Future<Map<String, double>> getPersonalRecords({String? uid}) async {
     final userId = uid ?? AuthService.currentUser?.uid;
     if (userId == null) return {};
 
@@ -28,9 +26,7 @@ class StatsService {
   }
 
   // Volumen total por día (series x reps x peso)
-  static Future<Map<String, double>> getVolumeByDay({
-    String? uid,
-  }) async {
+  static Future<Map<String, double>> getVolumeByDay({String? uid}) async {
     final userId = uid ?? AuthService.currentUser?.uid;
     if (userId == null) return {};
 
@@ -97,5 +93,29 @@ class StatsService {
       }
     }
     return result;
+  }
+
+  static Future<Map<String, List<Map<String, dynamic>>>> getSessionHistory({
+    String? uid,
+  }) async {
+    final userId = uid ?? AuthService.currentUser?.uid;
+    if (userId == null) return {};
+
+    final snapshot = await _db
+        .collection('historial')
+        .where('uid', isEqualTo: userId)
+        .orderBy('date', descending: true)
+        .get();
+
+    final Map<String, List<Map<String, dynamic>>> sessions = {};
+
+    for (final doc in snapshot.docs) {
+      final date = DateTime.parse(doc.data()['date'] as String);
+      final key =
+          '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+      sessions.putIfAbsent(key, () => []).add(doc.data());
+    }
+
+    return sessions;
   }
 }
