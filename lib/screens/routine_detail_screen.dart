@@ -343,53 +343,154 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
   // --- Editar peso de una serie ---
 
   void _editSerieWeight(Serie serie, String exerciseName, int serieIndex) {
-    final controller = TextEditingController(text: serie.weight.toString());
+    int selectedInt = serie.weight.toInt();
+    int selectedDecimal = ((serie.weight - selectedInt) * 100).round();
+    // Normalizar decimal a opciones válidas
+    const decimals = [0, 25, 50, 75];
+    if (!decimals.contains(selectedDecimal)) selectedDecimal = 0;
 
-    showDialog(
+    showModalBottomSheet(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppColors.backgroundAppBar,
-        title: Text(
-          '${serie.reps} reps',
-          style: const TextStyle(color: Colors.white),
-        ),
-        content: TextField(
-          controller: controller,
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          style: const TextStyle(color: Colors.white),
-          decoration: InputDecoration(
-            labelText: 'Peso ($_unit)',
-            labelStyle: TextStyle(color: AppColors.primary),
-            enabledBorder: UnderlineInputBorder(
-              borderSide: BorderSide(color: AppColors.primary),
+      backgroundColor: AppColors.backgroundAppBar,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text(
+                    'Cancelar',
+                    style: TextStyle(color: Colors.white60),
+                  ),
+                ),
+                Text(
+                  '${serie.reps} REPS',
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 11,
+                    letterSpacing: 1.5,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                TextButton(
+                  onPressed: () async {
+                    final newWeight = selectedInt + selectedDecimal / 100.0;
+                    setState(() => serie.weight = newWeight);
+                    Navigator.pop(context);
+                    await RoutineService.saveSerieWeight(
+                      exerciseName: exerciseName,
+                      serieIndex: serieIndex,
+                      weight: newWeight,
+                      rutinaId: widget.routine.id,
+                    );
+                    await RoutineService.addWeightEntry(
+                      exerciseName,
+                      newWeight,
+                    );
+                  },
+                  child: Text(
+                    'Listo',
+                    style: TextStyle(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text(
-              'Cancelar',
-              style: TextStyle(color: Colors.white60),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Parte entera
+                SizedBox(
+                  width: 80,
+                  height: 200,
+                  child: CupertinoPicker(
+                    looping: true,
+                    scrollController: FixedExtentScrollController(
+                      initialItem: selectedInt,
+                    ),
+                    itemExtent: 36,
+                    onSelectedItemChanged: (index) {
+                      selectedInt = index;
+                    },
+                    children: List.generate(
+                      501,
+                      (i) => Center(
+                        child: Text(
+                          '$i',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 26,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                // Separador
+                const Text(
+                  '.',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                // Parte decimal
+                SizedBox(
+                  width: 80,
+                  height: 200,
+                  child: CupertinoPicker(
+                    looping: true,
+                    scrollController: FixedExtentScrollController(
+                      initialItem: decimals.indexOf(selectedDecimal),
+                    ),
+                    itemExtent: 36,
+                    onSelectedItemChanged: (index) {
+                      selectedDecimal = decimals[index];
+                    },
+                    children: decimals
+                        .map(
+                          (d) => Center(
+                            child: Text(
+                              '$d',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 26,
+                              ),
+                            ),
+                          ),
+                        )
+                        .toList(),
+                  ),
+                ),
+                // Unidad
+                Padding(
+                  padding: const EdgeInsets.only(left: 8),
+                  child: Text(
+                    _unit,
+                    style: const TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
-          TextButton(
-            onPressed: () async {
-              final newWeight = double.tryParse(controller.text);
-              if (newWeight != null) {
-                setState(() => serie.weight = newWeight);
-                await RoutineService.saveSerieWeight(
-                  exerciseName: exerciseName,
-                  serieIndex: serieIndex,
-                  weight: newWeight,
-                  rutinaId: widget.routine.id,
-                );
-                await RoutineService.addWeightEntry(exerciseName, newWeight);
-              }
-              Navigator.pop(context);
-            },
-            child: Text('Guardar', style: TextStyle(color: AppColors.primary)),
-          ),
+          const SizedBox(height: 20),
         ],
       ),
     );
