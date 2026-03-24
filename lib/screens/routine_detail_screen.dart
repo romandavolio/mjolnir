@@ -7,6 +7,7 @@ import 'package:mjolnir/models/routine_exercise.dart';
 import 'package:mjolnir/models/serie.dart';
 import 'package:mjolnir/services/routine_service.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:mjolnir/screens/workout_session_screen.dart';
 
 class RoutineDetailScreen extends StatefulWidget {
   final Routine routine;
@@ -28,6 +29,9 @@ class RoutineDetailScreen extends StatefulWidget {
 
 class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
   String _unit = 'kg';
+  int? _activeTimer;
+  String? _activeTimerExercise;
+  bool _timerRunning = false;
 
   @override
   void initState() {
@@ -391,6 +395,12 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
                       exerciseName,
                       newWeight,
                     );
+
+                    // Activar timer automáticamente
+                    final timerSeconds = await RoutineService.loadRestTimer(
+                      exerciseName,
+                    );
+                    if (mounted) _startTimer(timerSeconds, exerciseName);
                   },
                   child: Text(
                     'Listo',
@@ -901,183 +911,325 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
         title: Text(widget.routine.name),
         backgroundColor: AppColors.backgroundAppBar,
         foregroundColor: AppColors.primary,
-      ),
-      body: widget.routine.exercises.isEmpty
-          ? const Center(
+        actions: [
+          if (!widget.readOnly)
+            TextButton(
+              onPressed: widget.routine.exercises.isEmpty
+                  ? null
+                  : () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            WorkoutSessionScreen(routine: widget.routine),
+                      ),
+                    ),
               child: Text(
-                'No hay ejercicios en esta rutina.\nTocá + para agregar uno.',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.white60, fontSize: 15),
+                'Comenzar',
+                style: TextStyle(
+                  color: widget.routine.exercises.isEmpty
+                      ? AppColors.textSecondary
+                      : AppColors.secondary,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-            )
-          : Theme(
-              data: Theme.of(context).copyWith(
-                canvasColor: Colors.transparent,
-                shadowColor: Colors.transparent,
-              ),
-              child: ReorderableListView.builder(
-                padding: const EdgeInsets.all(16),
-                itemCount: widget.routine.exercises.length,
-                onReorder: (oldIndex, newIndex) async {
-                  setState(() {
-                    if (newIndex > oldIndex) newIndex--;
-                    final item = widget.routine.exercises.removeAt(oldIndex);
-                    widget.routine.exercises.insert(newIndex, item);
-                  });
-                  await _save();
-                },
-                itemBuilder: (context, index) {
-                  final routineExercise = widget.routine.exercises[index];
-                  final exercise = routineExercise.exercise;
-                  return Card(
-                    key: ValueKey(exercise.name),
-                    color: AppColors.backgroundAppBar,
-                    margin: const EdgeInsets.only(bottom: 16),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
+            ),
+        ],
+      ),
+      body: Stack(
+        children: [
+          widget.routine.exercises.isEmpty
+              ? const Center(
+                  child: Text(
+                    'No hay ejercicios en esta rutina.\nTocá + para agregar uno.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.white60, fontSize: 15),
+                  ),
+                )
+              : Theme(
+                  data: Theme.of(context).copyWith(
+                    canvasColor: Colors.transparent,
+                    shadowColor: Colors.transparent,
+                  ),
+                  child: ReorderableListView.builder(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: widget.routine.exercises.length,
+                    onReorder: (oldIndex, newIndex) async {
+                      setState(() {
+                        if (newIndex > oldIndex) newIndex--;
+                        final item = widget.routine.exercises.removeAt(
+                          oldIndex,
+                        );
+                        widget.routine.exercises.insert(newIndex, item);
+                      });
+                      await _save();
+                    },
+                    itemBuilder: (context, index) {
+                      final routineExercise = widget.routine.exercises[index];
+                      final exercise = routineExercise.exercise;
+                      return Card(
+                        key: ValueKey(exercise.name),
+                        color: AppColors.backgroundAppBar,
+                        margin: const EdgeInsets.only(bottom: 16),
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              ReorderableDragStartListener(
-                                index: index,
-                                child: const Icon(
-                                  Icons.drag_handle,
-                                  color: AppColors.textSecondary,
-                                  size: 20,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      exercise.name,
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 15,
-                                      ),
-                                    ),
-                                    if (exercise.muscle.isNotEmpty)
-                                      Text(
-                                        [
-                                          if (exercise.muscle.isNotEmpty)
-                                            exercise.muscle,
-                                          if (exercise.equipment.isNotEmpty)
-                                            exercise.equipment,
-                                          if (exercise.variant.isNotEmpty)
-                                            exercise.variant,
-                                        ].join(' · '),
-                                        style: TextStyle(
-                                          color: AppColors.primary.withValues(
-                                            alpha: 0.7,
-                                          ),
-                                          fontSize: 11,
-                                        ),
-                                      ),
-                                  ],
-                                ),
-                              ),
-                              IconButton(
-                                icon: const Icon(
-                                  Icons.edit_outlined,
-                                  color: AppColors.textSecondary,
-                                  size: 18,
-                                ),
-                                onPressed: () =>
-                                    _showSeriesForm(routineExercise, exercise),
-                              ),
-                              IconButton(
-                                icon: const Icon(
-                                  Icons.remove_circle_outline,
-                                  color: AppColors.textSecondary,
-                                  size: 20,
-                                ),
-                                onPressed: () => _removeExercise(index),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          ...routineExercise.series.asMap().entries.map((
-                            entry,
-                          ) {
-                            final i = entry.key;
-                            final serie = entry.value;
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: 8),
-                              child: Row(
+                              Row(
                                 children: [
-                                  Container(
-                                    width: 28,
-                                    height: 28,
-                                    decoration: BoxDecoration(
-                                      color: AppColors.primary.withValues(
-                                        alpha: 0.15,
-                                      ),
-                                      borderRadius: BorderRadius.circular(8),
+                                  ReorderableDragStartListener(
+                                    index: index,
+                                    child: const Icon(
+                                      Icons.drag_handle,
+                                      color: AppColors.textSecondary,
+                                      size: 20,
                                     ),
-                                    child: Center(
-                                      child: Text(
-                                        '${i + 1}',
-                                        style: TextStyle(
-                                          color: AppColors.primary,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 12,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          exercise.name,
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 15,
+                                          ),
                                         ),
-                                      ),
+                                        if (exercise.muscle.isNotEmpty)
+                                          Text(
+                                            [
+                                              if (exercise.muscle.isNotEmpty)
+                                                exercise.muscle,
+                                              if (exercise.equipment.isNotEmpty)
+                                                exercise.equipment,
+                                              if (exercise.variant.isNotEmpty)
+                                                exercise.variant,
+                                            ].join(' · '),
+                                            style: TextStyle(
+                                              color: AppColors.primary
+                                                  .withValues(alpha: 0.7),
+                                              fontSize: 11,
+                                            ),
+                                          ),
+                                      ],
                                     ),
                                   ),
-                                  const SizedBox(width: 12),
-                                  Text(
-                                    '${serie.reps} reps',
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 14,
-                                    ),
-                                  ),
-                                  const Spacer(),
-                                  GestureDetector(
-                                    onTap: () => _editSerieWeight(
-                                      serie,
+                                  FutureBuilder<int>(
+                                    future: RoutineService.loadRestTimer(
                                       exercise.name,
-                                      i,
                                     ),
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 12,
-                                        vertical: 6,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        border: Border.all(
-                                          color: AppColors.primary,
+                                    builder: (context, snapshot) {
+                                      final seconds = snapshot.data ?? 60;
+                                      return IconButton(
+                                        icon: const Icon(
+                                          Icons.timer_outlined,
+                                          color: AppColors.textSecondary,
+                                          size: 18,
                                         ),
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      child: Text(
-                                        serie.weight == 0
-                                            ? '— $_unit'
-                                            : '${serie.weight} $_unit',
-                                        style: TextStyle(
-                                          color: AppColors.primary,
-                                          fontWeight: FontWeight.bold,
+                                        onPressed: () => _showTimerPicker(
+                                          exercise.name,
+                                          seconds,
                                         ),
-                                      ),
+                                      );
+                                    },
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(
+                                      Icons.edit_outlined,
+                                      color: AppColors.textSecondary,
+                                      size: 18,
                                     ),
+                                    onPressed: () => _showSeriesForm(
+                                      routineExercise,
+                                      exercise,
+                                    ),
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(
+                                      Icons.remove_circle_outline,
+                                      color: AppColors.textSecondary,
+                                      size: 20,
+                                    ),
+                                    onPressed: () => _removeExercise(index),
                                   ),
                                 ],
                               ),
-                            );
-                          }),
+                              const SizedBox(height: 12),
+                              ...routineExercise.series.asMap().entries.map((
+                                entry,
+                              ) {
+                                final i = entry.key;
+                                final serie = entry.value;
+                                return Padding(
+                                  padding: const EdgeInsets.only(bottom: 8),
+                                  child: Row(
+                                    children: [
+                                      Container(
+                                        width: 28,
+                                        height: 28,
+                                        decoration: BoxDecoration(
+                                          color: AppColors.primary.withValues(
+                                            alpha: 0.15,
+                                          ),
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
+                                        ),
+                                        child: Center(
+                                          child: Text(
+                                            '${i + 1}',
+                                            style: TextStyle(
+                                              color: AppColors.primary,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Text(
+                                        '${serie.reps} reps',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                      const Spacer(),
+                                      GestureDetector(
+                                        onTap: () => _editSerieWeight(
+                                          serie,
+                                          exercise.name,
+                                          i,
+                                        ),
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 12,
+                                            vertical: 6,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            border: Border.all(
+                                              color: AppColors.primary,
+                                            ),
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
+                                          ),
+                                          child: Text(
+                                            serie.weight == 0
+                                                ? '— $_unit'
+                                                : '${serie.weight} $_unit',
+                                            style: TextStyle(
+                                              color: AppColors.primary,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+
+          // Banner del timer
+          if (_activeTimer != null)
+            Positioned(
+              bottom: 80,
+              left: 16,
+              right: 16,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 14,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.backgroundAppBar,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: _activeTimer! > 0
+                        ? AppColors.primary
+                        : AppColors.secondary,
+                    width: 1.5,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.4),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      _activeTimer! > 0
+                          ? Icons.timer_outlined
+                          : Icons.check_circle_outline,
+                      color: _activeTimer! > 0
+                          ? AppColors.primary
+                          : AppColors.secondary,
+                      size: 24,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _activeTimer! > 0
+                                ? 'Descansando...'
+                                : '¡Listo para la siguiente serie!',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                            ),
+                          ),
+                          if (_activeTimerExercise != null)
+                            Text(
+                              _activeTimerExercise!,
+                              style: const TextStyle(
+                                color: AppColors.textSecondary,
+                                fontSize: 11,
+                              ),
+                            ),
                         ],
                       ),
                     ),
-                  );
-                },
+                    if (_activeTimer! > 0)
+                      Text(
+                        '${_activeTimer}s',
+                        style: TextStyle(
+                          color: AppColors.primary,
+                          fontSize: 24,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    const SizedBox(width: 8),
+                    GestureDetector(
+                      onTap: _stopTimer,
+                      child: const Icon(
+                        Icons.close,
+                        color: AppColors.textSecondary,
+                        size: 20,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
+        ],
+      ),
       floatingActionButton: widget.readOnly
           ? null
           : FloatingActionButton(
@@ -1085,6 +1237,122 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
               onPressed: _showMuscleSelector,
               child: const Icon(Icons.add, color: Colors.black),
             ),
+    );
+  }
+
+  void _startTimer(int seconds, String exerciseName) {
+    setState(() {
+      _activeTimer = seconds;
+      _activeTimerExercise = exerciseName;
+      _timerRunning = true;
+    });
+    _runTimer();
+  }
+
+  void _runTimer() async {
+    while (_timerRunning && _activeTimer != null && _activeTimer! > 0) {
+      await Future.delayed(const Duration(seconds: 1));
+      if (!mounted) return;
+      setState(() {
+        if (_activeTimer != null) _activeTimer = _activeTimer! - 1;
+        if (_activeTimer == 0) _timerRunning = false;
+      });
+    }
+  }
+
+  void _stopTimer() {
+    setState(() {
+      _activeTimer = null;
+      _activeTimerExercise = null;
+      _timerRunning = false;
+    });
+  }
+
+  void _showTimerPicker(String exerciseName, int currentSeconds) {
+    int tempSeconds = currentSeconds;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.backgroundAppBar,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text(
+                    'Cancelar',
+                    style: TextStyle(color: Colors.white60),
+                  ),
+                ),
+                const Text(
+                  'DESCANSO',
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 11,
+                    letterSpacing: 1.5,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                TextButton(
+                  onPressed: () async {
+                    Navigator.pop(context);
+                    await RoutineService.saveRestTimer(
+                      exerciseName,
+                      tempSeconds,
+                    );
+                    _startTimer(tempSeconds, exerciseName);
+                  },
+                  child: Text(
+                    'Iniciar',
+                    style: TextStyle(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          SizedBox(
+            height: 200,
+            child: CupertinoPicker(
+              scrollController: FixedExtentScrollController(
+                initialItem: (tempSeconds ~/ 5) - 1,
+              ),
+              itemExtent: 40,
+              looping: true,
+              onSelectedItemChanged: (index) {
+                tempSeconds = (index + 1) * 5;
+              },
+              children: List.generate(60, (i) {
+                final secs = (i + 1) * 5;
+                final mins = secs ~/ 60;
+                final remaining = secs % 60;
+                final label = mins > 0
+                    ? remaining > 0
+                          ? '${mins}m ${remaining}s'
+                          : '${mins}m'
+                    : '${secs}s';
+                return Center(
+                  child: Text(
+                    label,
+                    style: const TextStyle(color: Colors.white, fontSize: 20),
+                  ),
+                );
+              }),
+            ),
+          ),
+          const SizedBox(height: 20),
+        ],
+      ),
     );
   }
 }

@@ -317,4 +317,20 @@ class RoutineService {
     if (snapshot.docs.isEmpty) return null;
     return DateTime.parse(snapshot.docs.first.data()['date'] as String);
   }
+
+  static Future<void> saveRestTimer(String exerciseName, int seconds) async {
+    final uid = AuthService.currentUser?.uid;
+    if (uid == null) return;
+    await _db.collection('usuarios').doc(uid).update({
+      'restTimer_$exerciseName': seconds,
+    });
+  }
+
+  static Future<int> loadRestTimer(String exerciseName) async {
+    final uid = AuthService.currentUser?.uid;
+    if (uid == null) return 60;
+    final doc = await _db.collection('usuarios').doc(uid).get();
+    if (!doc.exists) return 60;
+    return doc.data()?['restTimer_$exerciseName'] ?? 60;
+  }
 }
