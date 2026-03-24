@@ -5,6 +5,7 @@ import 'package:mjolnir/models/routine.dart';
 import 'package:mjolnir/models/routine_exercise.dart';
 import 'package:mjolnir/models/serie.dart';
 import 'package:mjolnir/services/routine_service.dart';
+import 'package:mjolnir/screens/workout_summary_screen.dart';
 
 class WorkoutSessionScreen extends StatefulWidget {
   final Routine routine;
@@ -20,10 +21,12 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
   String _unit = 'kg';
   int? _activeTimer;
   bool _timerRunning = false;
+  late DateTime _sessionStart;
 
   @override
   void initState() {
     super.initState();
+    _sessionStart = DateTime.now();
     _loadUnit();
     _loadWeights();
   }
@@ -89,8 +92,7 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
 
   void _showTimerPicker() async {
     final exerciseName = _currentExercise.exercise.name;
-    final currentSeconds =
-        await RoutineService.loadRestTimer(exerciseName);
+    final currentSeconds = await RoutineService.loadRestTimer(exerciseName);
     int tempSeconds = currentSeconds;
 
     if (!mounted) return;
@@ -105,33 +107,42 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Padding(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: const Text('Cancelar',
-                      style: TextStyle(color: Colors.white60)),
+                  child: const Text(
+                    'Cancelar',
+                    style: TextStyle(color: Colors.white60),
+                  ),
                 ),
-                const Text('DESCANSO',
-                    style: TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 11,
-                        letterSpacing: 1.5,
-                        fontWeight: FontWeight.w600)),
+                const Text(
+                  'DESCANSO',
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 11,
+                    letterSpacing: 1.5,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
                 TextButton(
                   onPressed: () async {
                     Navigator.pop(context);
                     await RoutineService.saveRestTimer(
-                        exerciseName, tempSeconds);
+                      exerciseName,
+                      tempSeconds,
+                    );
                     _startTimer(tempSeconds);
                   },
-                  child: Text('Iniciar',
-                      style: TextStyle(
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.bold)),
+                  child: Text(
+                    'Iniciar',
+                    style: TextStyle(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -140,7 +151,8 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
             height: 200,
             child: CupertinoPicker(
               scrollController: FixedExtentScrollController(
-                  initialItem: (tempSeconds ~/ 5) - 1),
+                initialItem: (tempSeconds ~/ 5) - 1,
+              ),
               itemExtent: 40,
               looping: true,
               onSelectedItemChanged: (index) {
@@ -152,13 +164,14 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
                 final remaining = secs % 60;
                 final label = mins > 0
                     ? remaining > 0
-                        ? '${mins}m ${remaining}s'
-                        : '${mins}m'
+                          ? '${mins}m ${remaining}s'
+                          : '${mins}m'
                     : '${secs}s';
                 return Center(
-                  child: Text(label,
-                      style: const TextStyle(
-                          color: Colors.white, fontSize: 20)),
+                  child: Text(
+                    label,
+                    style: const TextStyle(color: Colors.white, fontSize: 20),
+                  ),
                 );
               }),
             ),
@@ -171,8 +184,7 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
 
   void _editSerieWeight(Serie serie, int serieIndex) {
     int selectedInt = serie.weight.toInt();
-    int selectedDecimal =
-        ((serie.weight - selectedInt) * 100).round();
+    int selectedDecimal = ((serie.weight - selectedInt) * 100).round();
     const decimals = [0, 25, 50, 75];
     if (!decimals.contains(selectedDecimal)) selectedDecimal = 0;
 
@@ -186,28 +198,29 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Padding(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: const Text('Cancelar',
-                      style: TextStyle(color: Colors.white60)),
+                  child: const Text(
+                    'Cancelar',
+                    style: TextStyle(color: Colors.white60),
+                  ),
                 ),
                 Text(
                   '${serie.reps} REPS',
                   style: const TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 11,
-                      letterSpacing: 1.5,
-                      fontWeight: FontWeight.w600),
+                    color: AppColors.textSecondary,
+                    fontSize: 11,
+                    letterSpacing: 1.5,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
                 TextButton(
                   onPressed: () async {
-                    final newWeight =
-                        selectedInt + selectedDecimal / 100.0;
+                    final newWeight = selectedInt + selectedDecimal / 100.0;
                     setState(() => serie.weight = newWeight);
                     Navigator.pop(context);
                     await RoutineService.saveSerieWeight(
@@ -217,15 +230,21 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
                       rutinaId: widget.routine.id,
                     );
                     await RoutineService.addWeightEntry(
-                        _currentExercise.exercise.name, newWeight);
-                    final timerSeconds = await RoutineService
-                        .loadRestTimer(_currentExercise.exercise.name);
+                      _currentExercise.exercise.name,
+                      newWeight,
+                    );
+                    final timerSeconds = await RoutineService.loadRestTimer(
+                      _currentExercise.exercise.name,
+                    );
                     if (mounted) _startTimer(timerSeconds);
                   },
-                  child: Text('Listo',
-                      style: TextStyle(
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.bold)),
+                  child: Text(
+                    'Listo',
+                    style: TextStyle(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -240,7 +259,8 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
                   height: 200,
                   child: CupertinoPicker(
                     scrollController: FixedExtentScrollController(
-                        initialItem: selectedInt),
+                      initialItem: selectedInt,
+                    ),
                     itemExtent: 36,
                     looping: true,
                     onSelectedItemChanged: (index) {
@@ -249,45 +269,62 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
                     children: List.generate(
                       501,
                       (i) => Center(
-                        child: Text('$i',
-                            style: const TextStyle(
-                                color: Colors.white, fontSize: 26)),
+                        child: Text(
+                          '$i',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 26,
+                          ),
+                        ),
                       ),
                     ),
                   ),
                 ),
-                const Text('.',
-                    style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold)),
+                const Text(
+                  '.',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
                 SizedBox(
                   width: 80,
                   height: 200,
                   child: CupertinoPicker(
                     scrollController: FixedExtentScrollController(
-                        initialItem: decimals.indexOf(selectedDecimal)),
+                      initialItem: decimals.indexOf(selectedDecimal),
+                    ),
                     itemExtent: 36,
                     looping: true,
                     onSelectedItemChanged: (index) {
                       selectedDecimal = decimals[index];
                     },
                     children: decimals
-                        .map((d) => Center(
-                              child: Text('$d',
-                                  style: const TextStyle(
-                                      color: Colors.white, fontSize: 26)),
-                            ))
+                        .map(
+                          (d) => Center(
+                            child: Text(
+                              '$d',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 26,
+                              ),
+                            ),
+                          ),
+                        )
                         .toList(),
                   ),
                 ),
                 Padding(
                   padding: const EdgeInsets.only(left: 8),
-                  child: Text(_unit,
-                      style: const TextStyle(
-                          color: AppColors.textSecondary,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold)),
+                  child: Text(
+                    _unit,
+                    style: const TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -300,28 +337,15 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
 
   void _finishSession() {
     _stopTimer();
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppColors.backgroundAppBar,
-        title: const Text('¡Rutina completada!',
-            style: TextStyle(color: Colors.white)),
-        content: Text(
-          'Completaste ${widget.routine.exercises.length} ejercicios.',
-          style: const TextStyle(color: Colors.white70),
+    final duration = DateTime.now().difference(_sessionStart);
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) => WorkoutSummaryScreen(
+          routine: widget.routine,
+          duration: duration,
+          sessionStart: _sessionStart,
         ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.pop(context);
-            },
-            child: Text('Cerrar',
-                style: TextStyle(
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.bold)),
-          ),
-        ],
       ),
     );
   }
@@ -339,8 +363,10 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
         actions: [
           TextButton(
             onPressed: _finishSession,
-            child: const Text('Finalizar',
-                style: TextStyle(color: Colors.redAccent)),
+            child: const Text(
+              'Finalizar',
+              style: TextStyle(color: Colors.redAccent),
+            ),
           ),
         ],
       ),
@@ -357,19 +383,24 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
                     Text(
                       '${_currentIndex + 1} / ${widget.routine.exercises.length}',
                       style: const TextStyle(
-                          color: AppColors.textSecondary, fontSize: 12),
+                        color: AppColors.textSecondary,
+                        fontSize: 12,
+                      ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(4),
                         child: LinearProgressIndicator(
-                          value: (_currentIndex + 1) /
+                          value:
+                              (_currentIndex + 1) /
                               widget.routine.exercises.length,
-                          backgroundColor:
-                              AppColors.primary.withValues(alpha: 0.15),
+                          backgroundColor: AppColors.primary.withValues(
+                            alpha: 0.15,
+                          ),
                           valueColor: AlwaysStoppedAnimation<Color>(
-                              AppColors.primary),
+                            AppColors.primary,
+                          ),
                           minHeight: 6,
                         ),
                       ),
@@ -388,9 +419,10 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
                           Text(
                             exercise.exercise.name,
                             style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 22,
-                                fontWeight: FontWeight.w900),
+                              color: Colors.white,
+                              fontSize: 22,
+                              fontWeight: FontWeight.w900,
+                            ),
                           ),
                           if (exercise.exercise.muscle.isNotEmpty)
                             Text(
@@ -402,16 +434,18 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
                                   exercise.exercise.variant,
                               ].join(' · '),
                               style: TextStyle(
-                                  color:
-                                      AppColors.primary.withValues(alpha: 0.7),
-                                  fontSize: 12),
+                                color: AppColors.primary.withValues(alpha: 0.7),
+                                fontSize: 12,
+                              ),
                             ),
                         ],
                       ),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.timer_outlined,
-                          color: AppColors.textSecondary),
+                      icon: const Icon(
+                        Icons.timer_outlined,
+                        color: AppColors.textSecondary,
+                      ),
                       onPressed: _showTimerPicker,
                     ),
                   ],
@@ -419,12 +453,15 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
                 const SizedBox(height: 24),
 
                 // Series
-                const Text('SERIES',
-                    style: TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 11,
-                        letterSpacing: 1.5,
-                        fontWeight: FontWeight.w600)),
+                const Text(
+                  'SERIES',
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 11,
+                    letterSpacing: 1.5,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
                 const SizedBox(height: 12),
                 Expanded(
                   child: ListView.builder(
@@ -435,14 +472,15 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
                         padding: const EdgeInsets.only(bottom: 12),
                         child: Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 14),
+                            horizontal: 16,
+                            vertical: 14,
+                          ),
                           decoration: BoxDecoration(
                             color: AppColors.surface,
                             borderRadius: BorderRadius.circular(14),
                             border: Border.all(
                               color: serie.weight > 0
-                                  ? AppColors.primary
-                                      .withValues(alpha: 0.5)
+                                  ? AppColors.primary.withValues(alpha: 0.5)
                                   : AppColors.primary.withValues(alpha: 0.2),
                             ),
                           ),
@@ -453,36 +491,47 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
                                 height: 32,
                                 decoration: BoxDecoration(
                                   color: serie.weight > 0
-                                      ? AppColors.primary
-                                          .withValues(alpha: 0.2)
-                                      : AppColors.primary
-                                          .withValues(alpha: 0.1),
+                                      ? AppColors.primary.withValues(alpha: 0.2)
+                                      : AppColors.primary.withValues(
+                                          alpha: 0.1,
+                                        ),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Center(
-                                  child: Text('${i + 1}',
-                                      style: TextStyle(
-                                          color: AppColors.primary,
-                                          fontWeight: FontWeight.bold)),
+                                  child: Text(
+                                    '${i + 1}',
+                                    style: TextStyle(
+                                      color: AppColors.primary,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
                                 ),
                               ),
                               const SizedBox(width: 16),
-                              Text('${serie.reps} reps',
-                                  style: const TextStyle(
-                                      color: Colors.white, fontSize: 15)),
+                              Text(
+                                '${serie.reps} reps',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 15,
+                                ),
+                              ),
                               const Spacer(),
                               GestureDetector(
                                 onTap: () => _editSerieWeight(serie, i),
                                 child: Container(
                                   padding: const EdgeInsets.symmetric(
-                                      horizontal: 16, vertical: 10),
+                                    horizontal: 16,
+                                    vertical: 10,
+                                  ),
                                   decoration: BoxDecoration(
                                     color: serie.weight > 0
-                                        ? AppColors.primary
-                                            .withValues(alpha: 0.15)
+                                        ? AppColors.primary.withValues(
+                                            alpha: 0.15,
+                                          )
                                         : Colors.transparent,
                                     border: Border.all(
-                                        color: AppColors.primary),
+                                      color: AppColors.primary,
+                                    ),
                                     borderRadius: BorderRadius.circular(10),
                                   ),
                                   child: Text(
@@ -490,9 +539,10 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
                                         ? '— $_unit'
                                         : '${serie.weight} $_unit',
                                     style: TextStyle(
-                                        color: AppColors.primary,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 15),
+                                      color: AppColors.primary,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 15,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -525,14 +575,17 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
                       foregroundColor: Colors.black,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
                     child: Text(
                       _isLastExercise
                           ? '¡Finalizar rutina!'
                           : 'Siguiente ejercicio',
                       style: const TextStyle(
-                          fontWeight: FontWeight.bold, fontSize: 16),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
                     ),
                   ),
                 ),
@@ -548,7 +601,9 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
               right: 16,
               child: Container(
                 padding: const EdgeInsets.symmetric(
-                    horizontal: 20, vertical: 14),
+                  horizontal: 20,
+                  vertical: 14,
+                ),
                 decoration: BoxDecoration(
                   color: AppColors.backgroundAppBar,
                   borderRadius: BorderRadius.circular(16),
@@ -584,24 +639,29 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
                             ? 'Descansando...'
                             : '¡Listo para la siguiente serie!',
                         style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 13),
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                        ),
                       ),
                     ),
                     if (_activeTimer! > 0)
                       Text(
                         '${_activeTimer}s',
                         style: TextStyle(
-                            color: AppColors.primary,
-                            fontSize: 24,
-                            fontWeight: FontWeight.w900),
+                          color: AppColors.primary,
+                          fontSize: 24,
+                          fontWeight: FontWeight.w900,
+                        ),
                       ),
                     const SizedBox(width: 8),
                     GestureDetector(
                       onTap: _stopTimer,
-                      child: const Icon(Icons.close,
-                          color: AppColors.textSecondary, size: 20),
+                      child: const Icon(
+                        Icons.close,
+                        color: AppColors.textSecondary,
+                        size: 20,
+                      ),
                     ),
                   ],
                 ),

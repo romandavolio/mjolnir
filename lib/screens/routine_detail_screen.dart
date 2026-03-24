@@ -912,23 +912,18 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
         backgroundColor: AppColors.backgroundAppBar,
         foregroundColor: AppColors.primary,
         actions: [
-          if (!widget.readOnly)
+          if (widget.routine.exercises.isNotEmpty)
             TextButton(
-              onPressed: widget.routine.exercises.isEmpty
-                  ? null
-                  : () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) =>
-                            WorkoutSessionScreen(routine: widget.routine),
-                      ),
-                    ),
-              child: Text(
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => WorkoutSessionScreen(routine: widget.routine),
+                ),
+              ),
+              child: const Text(
                 'Comenzar',
                 style: TextStyle(
-                  color: widget.routine.exercises.isEmpty
-                      ? AppColors.textSecondary
-                      : AppColors.secondary,
+                  color: AppColors.secondary,
                   fontWeight: FontWeight.bold,
                 ),
               ),
