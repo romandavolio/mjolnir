@@ -104,6 +104,17 @@ lib/
 - Sección de alimentación
 - Notas por rutina o ejercicio
 
+## Imagenes
+
+![menu](menu.png)
+![detalle de la rutina](rutina_detail.png)
+![detalle de la rutina iniciada](rutina_detail_2.png)
+![perfil](perfil.png)
+![estadisticas](estadisticas.png)
+![ejercicios](ejercicios.png)
+![alumnos](alumnos.png)
+![progreso](progreso.png)
+
 ## Cómo correrlo
 
 1. Cloná el repositorio
