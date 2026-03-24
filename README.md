@@ -40,7 +40,16 @@ Permite a trainers y alumnos gestionar ejercicios, rutinas y registrar el progre
 - Visualización de rutinas asignadas con nombre del trainer
 - Compartir rutinas propias con trainers vinculados
 - Creación, edición y duplicación de rutinas propias
-- Registro de pesos por serie con selector deslizable (enteros + decimales .25/.50/.75, hasta 500kg)
+- Sesión de entrenamiento guiada con navegación ejercicio por ejercicio
+
+### Sesión de entrenamiento
+- Pantalla dedicada al entrenamiento con progreso visual
+- Navegación de a un ejercicio por vez
+- Carga de pesos por serie con selector deslizable (enteros + decimales .25/.50/.75, hasta 500kg)
+- Timer de descanso automático al guardar un peso
+- Timer de descanso manual configurable por ejercicio
+- Tiempo de descanso persistido por ejercicio — recuerda el último usado
+- Botón "Siguiente ejercicio" y "Finalizar rutina" al llegar al último
 
 ### Ejercicios y rutinas
 - Catálogo global de ejercicios con navegación jerárquica: músculo → elemento → acompañamiento → ejercicio
@@ -50,7 +59,6 @@ Permite a trainers y alumnos gestionar ejercicios, rutinas y registrar el progre
 - Series con valor por defecto igual a la serie anterior
 - Duplicar rutinas con nombre personalizado
 - Editar nombre de rutinas existentes
-- Registro de peso individual por serie con selector deslizable
 
 ### Progreso y estadísticas
 - Historial de progreso con gráfico de evolución por ejercicio
@@ -94,7 +102,6 @@ lib/
 
 - Foto de perfil — requiere plan de pago en Firebase Storage
 - Sección de alimentación
-- Timer de descanso entre series
 - Notas por rutina o ejercicio
 
 ## Cómo correrlo
