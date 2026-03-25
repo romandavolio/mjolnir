@@ -9,6 +9,7 @@ import 'package:mjolnir/screens/note_editor_screen.dart';
 import 'package:mjolnir/services/routine_service.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:mjolnir/screens/workout_session_screen.dart';
+import 'package:vibration/vibration.dart';
 
 class RoutineDetailScreen extends StatefulWidget {
   final Routine routine;
@@ -1460,8 +1461,17 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
       if (!mounted) return;
       setState(() {
         if (_activeTimer != null) _activeTimer = _activeTimer! - 1;
-        if (_activeTimer == 0) _timerRunning = false;
+        if (_activeTimer == 0) {
+          _timerRunning = false;
+          _vibrate();
+        }
       });
+    }
+  }
+
+  void _vibrate() async {
+    if (await Vibration.hasVibrator() ?? false) {
+      Vibration.vibrate(pattern: [0, 400, 200, 400]);
     }
   }
 
