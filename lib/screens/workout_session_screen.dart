@@ -100,7 +100,8 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
   }
 
   void _vibrate() async {
-    if (await Vibration.hasVibrator() ?? false) {
+    final hasVibrator = await Vibration.hasVibrator();
+    if (hasVibrator) {
       Vibration.vibrate(pattern: [0, 400, 200, 400]);
     }
   }
