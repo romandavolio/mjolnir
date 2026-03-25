@@ -5,6 +5,7 @@ import 'package:mjolnir/models/exercise.dart';
 import 'package:mjolnir/models/routine.dart';
 import 'package:mjolnir/models/routine_exercise.dart';
 import 'package:mjolnir/models/serie.dart';
+import 'package:mjolnir/screens/note_editor_screen.dart';
 import 'package:mjolnir/services/routine_service.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:mjolnir/screens/workout_session_screen.dart';
@@ -34,6 +35,7 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
   bool _timerRunning = false;
   Map<String, DateTime?> _weightDates = {};
   Map<String, double> _lastWeights = {};
+  Map<String, String> _notes = {};
 
   @override
   void initState() {
@@ -45,6 +47,7 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
     final unit = await RoutineService.loadUnit();
     final Map<String, DateTime?> dates = {};
     final Map<String, double> lastWeights = {};
+    final notes = await RoutineService.loadAllNotes(widget.routine.id);
 
     for (final routineExercise in widget.routine.exercises) {
       for (int i = 0; i < routineExercise.series.length; i++) {
@@ -68,6 +71,7 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
       _unit = unit;
       _weightDates = dates;
       _lastWeights = lastWeights;
+      _notes = notes;
     });
   }
 
@@ -928,6 +932,42 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
         backgroundColor: AppColors.backgroundAppBar,
         foregroundColor: AppColors.primary,
         actions: [
+          if (!widget.readOnly)
+            IconButton(
+              icon: Icon(
+                _notes[widget.routine.id] != null &&
+                        _notes[widget.routine.id]!.isNotEmpty
+                    ? Icons.sticky_note_2
+                    : Icons.sticky_note_2_outlined,
+                color:
+                    _notes[widget.routine.id] != null &&
+                        _notes[widget.routine.id]!.isNotEmpty
+                    ? AppColors.primary
+                    : AppColors.textSecondary,
+              ),
+              onPressed: () async {
+                final result = await Navigator.push<String>(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => NoteEditorScreen(
+                      title: 'Nota de rutina',
+                      initialNote: _notes[widget.routine.id],
+                    ),
+                  ),
+                );
+                if (result != null) {
+                  await RoutineService.saveNote(
+                    rutinaId: widget.routine.id,
+                    note: result,
+                  );
+                  setState(
+                    () => _notes[widget.routine.id] = result.isEmpty
+                        ? ''
+                        : result,
+                  );
+                }
+              },
+            ),
           if (widget.routine.exercises.isNotEmpty)
             TextButton(
               onPressed: () => Navigator.push(
@@ -963,6 +1003,40 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
                   ),
                   child: ReorderableListView.builder(
                     padding: const EdgeInsets.all(16),
+                    header:
+                        _notes[widget.routine.id] != null &&
+                            _notes[widget.routine.id]!.isNotEmpty
+                        ? Container(
+                            margin: const EdgeInsets.only(bottom: 16),
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withValues(alpha: 0.05),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: AppColors.primary.withValues(alpha: 0.2),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.sticky_note_2,
+                                  color: AppColors.primary,
+                                  size: 16,
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    _notes[widget.routine.id]!,
+                                    style: const TextStyle(
+                                      color: AppColors.textSecondary,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
+                        : null,
                     itemCount: widget.routine.exercises.length,
                     onReorder: (oldIndex, newIndex) async {
                       setState(() {
@@ -1029,6 +1103,50 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
                                       ],
                                     ),
                                   ),
+                                  IconButton(
+                                    icon: Icon(
+                                      _notes['${widget.routine.id}_${exercise.name}'] !=
+                                                  null &&
+                                              _notes['${widget.routine.id}_${exercise.name}']!
+                                                  .isNotEmpty
+                                          ? Icons.sticky_note_2
+                                          : Icons.sticky_note_2_outlined,
+                                      color:
+                                          _notes['${widget.routine.id}_${exercise.name}'] !=
+                                                  null &&
+                                              _notes['${widget.routine.id}_${exercise.name}']!
+                                                  .isNotEmpty
+                                          ? AppColors.primary
+                                          : AppColors.textSecondary,
+                                      size: 18,
+                                    ),
+                                    onPressed: () async {
+                                      final noteKey =
+                                          '${widget.routine.id}_${exercise.name}';
+                                      final result =
+                                          await Navigator.push<String>(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (_) => NoteEditorScreen(
+                                                title: exercise.name,
+                                                initialNote: _notes[noteKey],
+                                              ),
+                                            ),
+                                          );
+                                      if (result != null) {
+                                        await RoutineService.saveNote(
+                                          rutinaId: widget.routine.id,
+                                          exerciseName: exercise.name,
+                                          note: result,
+                                        );
+                                        setState(
+                                          () => _notes[noteKey] = result.isEmpty
+                                              ? ''
+                                              : result,
+                                        );
+                                      }
+                                    },
+                                  ),
                                   FutureBuilder<int>(
                                     future: RoutineService.loadRestTimer(
                                       exercise.name,
@@ -1070,6 +1188,33 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
                                 ],
                               ),
                               const SizedBox(height: 12),
+                              if (_notes['${widget.routine.id}_${exercise.name}'] !=
+                                      null &&
+                                  _notes['${widget.routine.id}_${exercise.name}']!
+                                      .isNotEmpty)
+                                Container(
+                                  width: double.infinity,
+                                  margin: const EdgeInsets.only(bottom: 12),
+                                  padding: const EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primary.withValues(
+                                      alpha: 0.05,
+                                    ),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: AppColors.primary.withValues(
+                                        alpha: 0.2,
+                                      ),
+                                    ),
+                                  ),
+                                  child: Text(
+                                    _notes['${widget.routine.id}_${exercise.name}']!,
+                                    style: const TextStyle(
+                                      color: AppColors.textSecondary,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ),
                               ...routineExercise.series.asMap().entries.map((
                                 entry,
                               ) {
@@ -1125,28 +1270,35 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
                                           padding: const EdgeInsets.only(
                                             right: 8,
                                           ),
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.end,
-                                            children: [
-                                              const Text(
-                                                'último',
-                                                style: TextStyle(
-                                                  color:
-                                                      AppColors.textSecondary,
-                                                  fontSize: 9,
+                                          child: SizedBox(
+                                            width: 70,
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.end,
+                                              children: [
+                                                const Text(
+                                                  'último',
+                                                  style: TextStyle(
+                                                    color:
+                                                        AppColors.textSecondary,
+                                                    fontSize: 9,
+                                                  ),
                                                 ),
-                                              ),
-                                              Text(
-                                                '${serie.weight} $_unit',
-                                                style: TextStyle(
-                                                  color:
-                                                      AppColors.textSecondary,
-                                                  fontSize: 12,
-                                                  fontWeight: FontWeight.bold,
+                                                Text(
+                                                  _lastWeights.containsKey(
+                                                        dateKey,
+                                                      )
+                                                      ? '${_lastWeights[dateKey]} $_unit'
+                                                      : '${serie.weight} $_unit',
+                                                  style: TextStyle(
+                                                    color:
+                                                        AppColors.textSecondary,
+                                                    fontSize: 12,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
                                                 ),
-                                              ),
-                                            ],
+                                              ],
+                                            ),
                                           ),
                                         ),
                                       GestureDetector(

@@ -388,4 +388,52 @@ class RoutineService {
           : null,
     };
   }
+
+  static Future<void> saveNote({
+    required String rutinaId,
+    String? exerciseName,
+    required String note,
+  }) async {
+    final uid = AuthService.currentUser?.uid;
+    if (uid == null) return;
+    final key = exerciseName != null ? '${rutinaId}_$exerciseName' : rutinaId;
+    await _db.collection('usuarios').doc(uid).collection('notas').doc(key).set({
+      'note': note,
+      'updatedAt': DateTime.now().toIso8601String(),
+    });
+  }
+
+  static Future<String?> loadNote({
+    required String rutinaId,
+    String? exerciseName,
+  }) async {
+    final uid = AuthService.currentUser?.uid;
+    if (uid == null) return null;
+    final key = exerciseName != null ? '${rutinaId}_$exerciseName' : rutinaId;
+    final doc = await _db
+        .collection('usuarios')
+        .doc(uid)
+        .collection('notas')
+        .doc(key)
+        .get();
+    if (!doc.exists) return null;
+    return doc.data()?['note'] as String?;
+  }
+
+  static Future<Map<String, String>> loadAllNotes(String rutinaId) async {
+    final uid = AuthService.currentUser?.uid;
+    if (uid == null) return {};
+    final snapshot = await _db
+        .collection('usuarios')
+        .doc(uid)
+        .collection('notas')
+        .get();
+    final Map<String, String> notes = {};
+    for (final doc in snapshot.docs) {
+      if (doc.id == rutinaId || doc.id.startsWith('${rutinaId}_')) {
+        notes[doc.id] = doc.data()['note'] as String;
+      }
+    }
+    return notes;
+  }
 }
