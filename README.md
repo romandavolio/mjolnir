@@ -6,6 +6,17 @@ Aplicación móvil para gestión de rutinas de gimnasio, desarrollada con Flutte
 
 Permite a trainers y alumnos gestionar ejercicios, rutinas y registrar el progreso de peso a lo largo del tiempo. Los trainers pueden vincularse con sus alumnos, asignarles rutinas personalizadas y visualizar su evolución.
 
+## Imágenes
+
+![menu](menu.png)
+![detalle de la rutina](rutina_detail.png)
+![detalle de la rutina iniciada](rutina_detail_2.png)
+![perfil](perfil.png)
+![estadisticas](estadisticas.png)
+![ejercicios](ejercicios.png)
+![alumnos](alumnos.png)
+![progreso](progreso.png)
+
 ## Funcionalidades
 
 ### Autenticación y perfiles
@@ -41,15 +52,18 @@ Permite a trainers y alumnos gestionar ejercicios, rutinas y registrar el progre
 - Compartir rutinas propias con trainers vinculados
 - Creación, edición y duplicación de rutinas propias
 - Sesión de entrenamiento guiada con navegación ejercicio por ejercicio
+- Notas privadas por rutina y por ejercicio con emojis predefinidos
 
 ### Sesión de entrenamiento
 - Pantalla dedicada al entrenamiento con progreso visual
 - Navegación de a un ejercicio por vez
 - Carga de pesos por serie con selector deslizable (enteros + decimales .25/.50/.75, hasta 500kg)
+- Último peso registrado visible por serie
 - Timer de descanso automático al guardar un peso
 - Timer de descanso manual configurable por ejercicio
 - Tiempo de descanso persistido por ejercicio — recuerda el último usado
 - Botón "Siguiente ejercicio" y "Finalizar rutina" al llegar al último
+- Pantalla de resumen al finalizar con duración, volumen total, récords batidos y pesos por serie
 
 ### Ejercicios y rutinas
 - Catálogo global de ejercicios con navegación jerárquica: músculo → elemento → acompañamiento → ejercicio
@@ -102,18 +116,7 @@ lib/
 
 - Foto de perfil — requiere plan de pago en Firebase Storage
 - Sección de alimentación
-- Notas por rutina o ejercicio
-
-## Imagenes
-
-![menu](menu.png)
-![detalle de la rutina](rutina_detail.png)
-![detalle de la rutina iniciada](rutina_detail_2.png)
-![perfil](perfil.png)
-![estadisticas](estadisticas.png)
-![ejercicios](ejercicios.png)
-![alumnos](alumnos.png)
-![progreso](progreso.png)
+- Búsqueda global en el catálogo de ejercicios
 
 ## Cómo correrlo
 
