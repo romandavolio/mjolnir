@@ -22,6 +22,8 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
   int? _activeTimer;
   bool _timerRunning = false;
   late DateTime _sessionStart;
+  Map<String, DateTime?> _weightDates = {};
+  Map<String, double> _lastWeights = {};
 
   @override
   void initState() {
@@ -44,18 +46,28 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
   }
 
   Future<void> _loadWeights() async {
+    final Map<String, DateTime?> dates = {};
+    final Map<String, double> lastWeights = {};
     for (final routineExercise in widget.routine.exercises) {
       for (int i = 0; i < routineExercise.series.length; i++) {
-        final weight = await RoutineService.loadSerieWeight(
+        final result = await RoutineService.loadSerieWeightWithDate(
           exerciseName: routineExercise.exercise.name,
           serieIndex: i,
           rutinaId: widget.routine.id,
         );
-        routineExercise.series[i].weight = weight;
+        routineExercise.series[i].weight = result['weight'];
+        dates['${routineExercise.exercise.name}_$i'] = result['date'];
+        if (result['previousWeight'] != null) {
+          lastWeights['${routineExercise.exercise.name}_$i'] =
+              result['previousWeight'];
+        }
       }
     }
     if (!mounted) return;
-    setState(() {});
+    setState(() {
+      _weightDates = dates;
+      _lastWeights = lastWeights;
+    });
   }
 
   RoutineExercise get _currentExercise =>
@@ -221,7 +233,10 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
                 TextButton(
                   onPressed: () async {
                     final newWeight = selectedInt + selectedDecimal / 100.0;
-                    setState(() => serie.weight = newWeight);
+                    setState(() {
+                      _weightDates['${_currentExercise.exercise.name}_$serieIndex'] =
+                          DateTime.now();
+                    });
                     Navigator.pop(context);
                     await RoutineService.saveSerieWeight(
                       exerciseName: _currentExercise.exercise.name,
@@ -468,6 +483,15 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
                     itemCount: exercise.series.length,
                     itemBuilder: (context, i) {
                       final serie = exercise.series[i];
+                      final dateKey = '${exercise.exercise.name}_$i';
+                      final weightDate = _weightDates[dateKey];
+                      final isToday =
+                          weightDate != null &&
+                          weightDate.year == DateTime.now().year &&
+                          weightDate.month == DateTime.now().month &&
+                          weightDate.day == DateTime.now().day;
+                      final hasWeight = serie.weight > 0;
+
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 12),
                         child: Container(
@@ -479,7 +503,7 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
                             color: AppColors.surface,
                             borderRadius: BorderRadius.circular(14),
                             border: Border.all(
-                              color: serie.weight > 0
+                              color: isToday && hasWeight
                                   ? AppColors.primary.withValues(alpha: 0.5)
                                   : AppColors.primary.withValues(alpha: 0.2),
                             ),
@@ -490,7 +514,7 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
                                 width: 32,
                                 height: 32,
                                 decoration: BoxDecoration(
-                                  color: serie.weight > 0
+                                  color: isToday && hasWeight
                                       ? AppColors.primary.withValues(alpha: 0.2)
                                       : AppColors.primary.withValues(
                                           alpha: 0.1,
@@ -516,6 +540,36 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
                                 ),
                               ),
                               const Spacer(),
+                              if (_lastWeights.containsKey(dateKey) ||
+                                  hasWeight)
+                                Padding(
+                                  padding: const EdgeInsets.only(right: 8),
+                                  child: SizedBox(
+                                    width: 70,
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.end,
+                                      children: [
+                                        const Text(
+                                          'último',
+                                          style: TextStyle(
+                                            color: AppColors.textSecondary,
+                                            fontSize: 9,
+                                          ),
+                                        ),
+                                        Text(
+                                          _lastWeights.containsKey(dateKey)
+                                              ? '${_lastWeights[dateKey]} $_unit'
+                                              : '${serie.weight} $_unit',
+                                          style: TextStyle(
+                                            color: AppColors.textSecondary,
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
                               GestureDetector(
                                 onTap: () => _editSerieWeight(serie, i),
                                 child: Container(
@@ -524,7 +578,7 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
                                     vertical: 10,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: serie.weight > 0
+                                    color: isToday && hasWeight
                                         ? AppColors.primary.withValues(
                                             alpha: 0.15,
                                           )
@@ -535,9 +589,9 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
                                     borderRadius: BorderRadius.circular(10),
                                   ),
                                   child: Text(
-                                    serie.weight == 0
-                                        ? '— $_unit'
-                                        : '${serie.weight} $_unit',
+                                    isToday && hasWeight
+                                        ? '${serie.weight} $_unit'
+                                        : '— $_unit',
                                     style: TextStyle(
                                       color: AppColors.primary,
                                       fontWeight: FontWeight.bold,

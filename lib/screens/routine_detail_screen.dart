@@ -32,6 +32,8 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
   int? _activeTimer;
   String? _activeTimerExercise;
   bool _timerRunning = false;
+  Map<String, DateTime?> _weightDates = {};
+  Map<String, double> _lastWeights = {};
 
   @override
   void initState() {
@@ -41,22 +43,31 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
 
   Future<void> _loadData() async {
     final unit = await RoutineService.loadUnit();
+    final Map<String, DateTime?> dates = {};
+    final Map<String, double> lastWeights = {};
 
     for (final routineExercise in widget.routine.exercises) {
       for (int i = 0; i < routineExercise.series.length; i++) {
-        final weight = await RoutineService.loadSerieWeight(
+        final result = await RoutineService.loadSerieWeightWithDate(
           exerciseName: routineExercise.exercise.name,
           serieIndex: i,
           rutinaId: widget.routine.id,
           uid: widget.viewAsUid,
         );
-        routineExercise.series[i].weight = weight;
+        routineExercise.series[i].weight = result['weight'];
+        dates['${routineExercise.exercise.name}_$i'] = result['date'];
+        if (result['previousWeight'] != null) {
+          lastWeights['${routineExercise.exercise.name}_$i'] =
+              result['previousWeight'];
+        }
       }
     }
 
     if (!mounted) return;
     setState(() {
       _unit = unit;
+      _weightDates = dates;
+      _lastWeights = lastWeights;
     });
   }
 
@@ -343,10 +354,14 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
 
   // --- Editar peso de una serie ---
 
-  void _editSerieWeight(Serie serie, String exerciseName, int serieIndex) {
+  void _editSerieWeight(
+    Serie serie,
+    String exerciseName,
+    int serieIndex, {
+    Serie? originalSerie,
+  }) {
     int selectedInt = serie.weight.toInt();
     int selectedDecimal = ((serie.weight - selectedInt) * 100).round();
-    // Normalizar decimal a opciones válidas
     const decimals = [0, 25, 50, 75];
     if (!decimals.contains(selectedDecimal)) selectedDecimal = 0;
 
@@ -383,7 +398,9 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
                 TextButton(
                   onPressed: () async {
                     final newWeight = selectedInt + selectedDecimal / 100.0;
-                    setState(() => serie.weight = newWeight);
+                    // Actualizar la serie original si existe
+                    final targetSerie = originalSerie ?? serie;
+                    setState(() => targetSerie.weight = newWeight);
                     Navigator.pop(context);
                     await RoutineService.saveSerieWeight(
                       exerciseName: exerciseName,
@@ -395,8 +412,11 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
                       exerciseName,
                       newWeight,
                     );
-
-                    // Activar timer automáticamente
+                    // Actualizar fecha en el estado
+                    setState(() {
+                      _weightDates['${exerciseName}_$serieIndex'] =
+                          DateTime.now();
+                    });
                     final timerSeconds = await RoutineService.loadRestTimer(
                       exerciseName,
                     );
@@ -418,16 +438,15 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Parte entera
                 SizedBox(
                   width: 80,
                   height: 200,
                   child: CupertinoPicker(
-                    looping: true,
                     scrollController: FixedExtentScrollController(
                       initialItem: selectedInt,
                     ),
                     itemExtent: 36,
+                    looping: true,
                     onSelectedItemChanged: (index) {
                       selectedInt = index;
                     },
@@ -445,7 +464,6 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
                     ),
                   ),
                 ),
-                // Separador
                 const Text(
                   '.',
                   style: TextStyle(
@@ -454,16 +472,15 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                // Parte decimal
                 SizedBox(
                   width: 80,
                   height: 200,
                   child: CupertinoPicker(
-                    looping: true,
                     scrollController: FixedExtentScrollController(
                       initialItem: decimals.indexOf(selectedDecimal),
                     ),
                     itemExtent: 36,
+                    looping: true,
                     onSelectedItemChanged: (index) {
                       selectedDecimal = decimals[index];
                     },
@@ -482,7 +499,6 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
                         .toList(),
                   ),
                 ),
-                // Unidad
                 Padding(
                   padding: const EdgeInsets.only(left: 8),
                   child: Text(
@@ -1059,6 +1075,16 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
                               ) {
                                 final i = entry.key;
                                 final serie = entry.value;
+                                final dateKey = '${exercise.name}_$i';
+                                final weightDate = _weightDates[dateKey];
+                                final isToday =
+                                    weightDate != null &&
+                                    weightDate.year == DateTime.now().year &&
+                                    weightDate.month == DateTime.now().month &&
+                                    weightDate.day == DateTime.now().day;
+                                final hasWeight = serie.weight > 0;
+                                final showLabel = hasWeight;
+
                                 return Padding(
                                   padding: const EdgeInsets.only(bottom: 8),
                                   child: Row(
@@ -1094,11 +1120,43 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
                                         ),
                                       ),
                                       const Spacer(),
+                                      if (showLabel)
+                                        Padding(
+                                          padding: const EdgeInsets.only(
+                                            right: 8,
+                                          ),
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.end,
+                                            children: [
+                                              const Text(
+                                                'último',
+                                                style: TextStyle(
+                                                  color:
+                                                      AppColors.textSecondary,
+                                                  fontSize: 9,
+                                                ),
+                                              ),
+                                              Text(
+                                                '${serie.weight} $_unit',
+                                                style: TextStyle(
+                                                  color:
+                                                      AppColors.textSecondary,
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
                                       GestureDetector(
                                         onTap: () => _editSerieWeight(
-                                          serie,
+                                          isToday
+                                              ? serie
+                                              : Serie(reps: serie.reps),
                                           exercise.name,
                                           i,
+                                          originalSerie: serie,
                                         ),
                                         child: Container(
                                           padding: const EdgeInsets.symmetric(
@@ -1114,9 +1172,9 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
                                             ),
                                           ),
                                           child: Text(
-                                            serie.weight == 0
-                                                ? '— $_unit'
-                                                : '${serie.weight} $_unit',
+                                            isToday && serie.weight > 0
+                                                ? '${serie.weight} $_unit'
+                                                : '— $_unit',
                                             style: TextStyle(
                                               color: AppColors.primary,
                                               fontWeight: FontWeight.bold,

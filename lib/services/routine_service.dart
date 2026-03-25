@@ -121,10 +121,39 @@ class RoutineService {
   }) async {
     final uid = AuthService.currentUser?.uid;
     if (uid == null) return;
-    await _db
+    final docRef = _db
         .collection('pesos')
-        .doc('${uid}_${rutinaId}_${exerciseName}_$serieIndex')
-        .set({'weight': weight, 'updatedAt': DateTime.now().toIso8601String()});
+        .doc('${uid}_${rutinaId}_${exerciseName}_$serieIndex');
+
+    // Leer el peso actual antes de sobrescribir
+    final existing = await docRef.get();
+    double? previousWeight;
+    if (existing.exists) {
+      final existingDate = existing.data()?['updatedAt'] != null
+          ? DateTime.parse(existing.data()!['updatedAt'] as String)
+          : null;
+      final isToday =
+          existingDate != null &&
+          existingDate.year == DateTime.now().year &&
+          existingDate.month == DateTime.now().month &&
+          existingDate.day == DateTime.now().day;
+
+      if (!isToday) {
+        // El peso existente es de otro día — lo guardamos como previousWeight
+        previousWeight = (existing.data()!['weight'] as num).toDouble();
+      } else {
+        // El peso existente es de hoy — mantenemos el previousWeight que ya tenía
+        previousWeight = existing.data()?['previousWeight'] != null
+            ? (existing.data()!['previousWeight'] as num).toDouble()
+            : null;
+      }
+    }
+
+    await docRef.set({
+      'weight': weight,
+      'updatedAt': DateTime.now().toIso8601String(),
+      if (previousWeight != null) 'previousWeight': previousWeight,
+    });
   }
 
   static Future<double> loadSerieWeight({
@@ -332,5 +361,31 @@ class RoutineService {
     final doc = await _db.collection('usuarios').doc(uid).get();
     if (!doc.exists) return 60;
     return doc.data()?['restTimer_$exerciseName'] ?? 60;
+  }
+
+  static Future<Map<String, dynamic>> loadSerieWeightWithDate({
+    required String exerciseName,
+    required int serieIndex,
+    required String rutinaId,
+    String? uid,
+  }) async {
+    final userId = uid ?? AuthService.currentUser?.uid;
+    if (userId == null)
+      return {'weight': 0.0, 'date': null, 'previousWeight': null};
+    final doc = await _db
+        .collection('pesos')
+        .doc('${userId}_${rutinaId}_${exerciseName}_$serieIndex')
+        .get();
+    if (!doc.exists)
+      return {'weight': 0.0, 'date': null, 'previousWeight': null};
+    return {
+      'weight': (doc.data()!['weight'] as num).toDouble(),
+      'date': doc.data()!['updatedAt'] != null
+          ? DateTime.parse(doc.data()!['updatedAt'] as String)
+          : null,
+      'previousWeight': doc.data()?['previousWeight'] != null
+          ? (doc.data()!['previousWeight'] as num).toDouble()
+          : null,
+    };
   }
 }
