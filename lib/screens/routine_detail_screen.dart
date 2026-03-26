@@ -414,7 +414,7 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
                       rutinaId: widget.routine.id,
                     );
                     await RoutineService.addWeightEntry(
-                      exerciseName,
+                      '${exerciseName}_serie_$serieIndex',
                       newWeight,
                     );
                     // Actualizar fecha en el estado
@@ -1267,41 +1267,52 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
                                       ),
                                       const Spacer(),
                                       if (showLabel)
-                                        Padding(
-                                          padding: const EdgeInsets.only(
-                                            right: 8,
-                                          ),
-                                          child: SizedBox(
-                                            width: 70,
-                                            child: Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.end,
-                                              children: [
-                                                const Text(
-                                                  'último',
-                                                  style: TextStyle(
-                                                    color:
-                                                        AppColors.textSecondary,
-                                                    fontSize: 9,
-                                                  ),
+                                        if (showLabel)
+                                          GestureDetector(
+                                            onTap: () => _showSerieHistory(
+                                              exercise.name,
+                                              i,
+                                            ),
+                                            child: Padding(
+                                              padding: const EdgeInsets.only(
+                                                right: 8,
+                                              ),
+                                              child: SizedBox(
+                                                width: 70,
+                                                child: Column(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.end,
+                                                  children: [
+                                                    const Text(
+                                                      'último',
+                                                      style: TextStyle(
+                                                        color:
+                                                            AppColors.primary,
+                                                        fontSize: 9,
+                                                        decoration:
+                                                            TextDecoration
+                                                                .underline,
+                                                      ),
+                                                    ),
+                                                    Text(
+                                                      _lastWeights.containsKey(
+                                                            dateKey,
+                                                          )
+                                                          ? '${_lastWeights[dateKey]} $_unit'
+                                                          : '${serie.weight} $_unit',
+                                                      style: TextStyle(
+                                                        color: AppColors
+                                                            .textSecondary,
+                                                        fontSize: 12,
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                      ),
+                                                    ),
+                                                  ],
                                                 ),
-                                                Text(
-                                                  _lastWeights.containsKey(
-                                                        dateKey,
-                                                      )
-                                                      ? '${_lastWeights[dateKey]} $_unit'
-                                                      : '${serie.weight} $_unit',
-                                                  style: TextStyle(
-                                                    color:
-                                                        AppColors.textSecondary,
-                                                    fontSize: 12,
-                                                    fontWeight: FontWeight.bold,
-                                                  ),
-                                                ),
-                                              ],
+                                              ),
                                             ),
                                           ),
-                                        ),
                                       GestureDetector(
                                         onTap: () => _editSerieWeight(
                                           isToday
@@ -1568,6 +1579,85 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
           ),
           const SizedBox(height: 20),
         ],
+      ),
+    );
+  }
+
+  void _showSerieHistory(String exerciseName, int serieIndex) async {
+    final history = await RoutineService.loadSerieHistory(
+      exerciseName: exerciseName,
+      serieIndex: serieIndex,
+    );
+
+    if (!mounted) return;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.backgroundAppBar,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'HISTORIAL — SERIE ${serieIndex + 1}',
+              style: const TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 1.5,
+              ),
+            ),
+            const SizedBox(height: 16),
+            if (history.isEmpty)
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(vertical: 16),
+                  child: Text(
+                    'No hay registros todavía.',
+                    style: TextStyle(color: Colors.white60),
+                  ),
+                ),
+              )
+            else
+              ...history.map(
+                (entry) => Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.calendar_today,
+                        color: AppColors.textSecondary,
+                        size: 14,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        '${entry.date.day}/${entry.date.month}/${entry.date.year}',
+                        style: const TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 13,
+                        ),
+                      ),
+                      const Spacer(),
+                      Text(
+                        '${entry.weight} $_unit',
+                        style: TextStyle(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            const SizedBox(height: 8),
+          ],
+        ),
       ),
     );
   }

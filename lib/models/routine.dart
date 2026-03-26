@@ -8,8 +8,8 @@ class Routine {
   Routine({
     required this.id,
     required this.name,
-    this.exercises = const [],
-  });
+    List<RoutineExercise>? exercises,
+  }) : exercises = exercises ?? [];
 
   Map<String, dynamic> toJson() => {
     'id': id,

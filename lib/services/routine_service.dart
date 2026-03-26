@@ -436,4 +436,26 @@ class RoutineService {
     }
     return notes;
   }
+
+  static Future<List<WeightEntry>> loadSerieHistory({
+    required String exerciseName,
+    required int serieIndex,
+  }) async {
+    final uid = AuthService.currentUser?.uid;
+    if (uid == null) return [];
+    final snapshot = await _db
+        .collection('historial')
+        .where('uid', isEqualTo: uid)
+        .where('exerciseName', isEqualTo: '${exerciseName}_serie_$serieIndex')
+        .orderBy('date', descending: true)
+        .get();
+    return snapshot.docs
+        .map(
+          (d) => WeightEntry(
+            date: DateTime.parse(d.data()['date'] as String),
+            weight: (d.data()['weight'] as num).toDouble(),
+          ),
+        )
+        .toList();
+  }
 }
