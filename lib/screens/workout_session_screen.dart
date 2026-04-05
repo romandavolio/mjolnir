@@ -6,7 +6,7 @@ import 'package:mjolnir/models/routine_exercise.dart';
 import 'package:mjolnir/models/serie.dart';
 import 'package:mjolnir/services/routine_service.dart';
 import 'package:mjolnir/screens/workout_summary_screen.dart';
-import 'package:vibration/vibration.dart';
+import 'package:mjolnir/core/workout_mixin.dart';
 
 class WorkoutSessionScreen extends StatefulWidget {
   final Routine routine;
@@ -17,7 +17,8 @@ class WorkoutSessionScreen extends StatefulWidget {
   State<WorkoutSessionScreen> createState() => _WorkoutSessionScreenState();
 }
 
-class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
+class _WorkoutSessionScreenState extends State<WorkoutSessionScreen>
+    with WorkoutMixin {
   int _currentIndex = 0;
   String _unit = 'kg';
   int? _activeTimer;
@@ -77,292 +78,8 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
   bool get _isLastExercise =>
       _currentIndex == widget.routine.exercises.length - 1;
 
-  void _startTimer(int seconds) {
-    setState(() {
-      _activeTimer = seconds;
-      _timerRunning = true;
-    });
-    _runTimer();
-  }
-
-  void _runTimer() async {
-    while (_timerRunning && _activeTimer != null && _activeTimer! > 0) {
-      await Future.delayed(const Duration(seconds: 1));
-      if (!mounted) return;
-      setState(() {
-        if (_activeTimer != null) _activeTimer = _activeTimer! - 1;
-        if (_activeTimer == 0) {
-          _timerRunning = false;
-          _vibrate();
-        }
-      });
-    }
-  }
-
-  void _vibrate() async {
-    final hasVibrator = await Vibration.hasVibrator();
-    if (hasVibrator) {
-      Vibration.vibrate(pattern: [0, 400, 200, 400]);
-    }
-  }
-
-  void _stopTimer() {
-    setState(() {
-      _activeTimer = null;
-      _timerRunning = false;
-    });
-  }
-
-  void _showTimerPicker() async {
-    final exerciseName = _currentExercise.exercise.name;
-    final currentSeconds = await RoutineService.loadRestTimer(exerciseName);
-    int tempSeconds = currentSeconds;
-
-    if (!mounted) return;
-
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: AppColors.backgroundAppBar,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text(
-                    'Cancelar',
-                    style: TextStyle(color: Colors.white60),
-                  ),
-                ),
-                const Text(
-                  'DESCANSO',
-                  style: TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 11,
-                    letterSpacing: 1.5,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                TextButton(
-                  onPressed: () async {
-                    Navigator.pop(context);
-                    await RoutineService.saveRestTimer(
-                      exerciseName,
-                      tempSeconds,
-                    );
-                    _startTimer(tempSeconds);
-                  },
-                  child: Text(
-                    'Iniciar',
-                    style: TextStyle(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          SizedBox(
-            height: 200,
-            child: CupertinoPicker(
-              scrollController: FixedExtentScrollController(
-                initialItem: (tempSeconds ~/ 5) - 1,
-              ),
-              itemExtent: 40,
-              looping: true,
-              onSelectedItemChanged: (index) {
-                tempSeconds = (index + 1) * 5;
-              },
-              children: List.generate(60, (i) {
-                final secs = (i + 1) * 5;
-                final mins = secs ~/ 60;
-                final remaining = secs % 60;
-                final label = mins > 0
-                    ? remaining > 0
-                          ? '${mins}m ${remaining}s'
-                          : '${mins}m'
-                    : '${secs}s';
-                return Center(
-                  child: Text(
-                    label,
-                    style: const TextStyle(color: Colors.white, fontSize: 20),
-                  ),
-                );
-              }),
-            ),
-          ),
-          const SizedBox(height: 20),
-        ],
-      ),
-    );
-  }
-
-  void _editSerieWeight(Serie serie, int serieIndex) {
-    int selectedInt = serie.weight.toInt();
-    int selectedDecimal = ((serie.weight - selectedInt) * 100).round();
-    const decimals = [0, 25, 50, 75];
-    if (!decimals.contains(selectedDecimal)) selectedDecimal = 0;
-
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: AppColors.backgroundAppBar,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text(
-                    'Cancelar',
-                    style: TextStyle(color: Colors.white60),
-                  ),
-                ),
-                Text(
-                  '${serie.reps} REPS',
-                  style: const TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 11,
-                    letterSpacing: 1.5,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                TextButton(
-                  onPressed: () async {
-                    final newWeight = selectedInt + selectedDecimal / 100.0;
-                    setState(() {
-                      _weightDates['${_currentExercise.exercise.name}_$serieIndex'] =
-                          DateTime.now();
-                    });
-                    Navigator.pop(context);
-                    await RoutineService.saveSerieWeight(
-                      exerciseName: _currentExercise.exercise.name,
-                      serieIndex: serieIndex,
-                      weight: newWeight,
-                      rutinaId: widget.routine.id,
-                    );
-                    await RoutineService.addWeightEntry(
-                      '${_currentExercise.exercise.name}_serie_$serieIndex',
-                      newWeight,
-                    );
-                    final timerSeconds = await RoutineService.loadRestTimer(
-                      _currentExercise.exercise.name,
-                    );
-                    if (mounted) _startTimer(timerSeconds);
-                  },
-                  child: Text(
-                    'Listo',
-                    style: TextStyle(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                SizedBox(
-                  width: 80,
-                  height: 200,
-                  child: CupertinoPicker(
-                    scrollController: FixedExtentScrollController(
-                      initialItem: selectedInt,
-                    ),
-                    itemExtent: 36,
-                    looping: true,
-                    onSelectedItemChanged: (index) {
-                      selectedInt = index;
-                    },
-                    children: List.generate(
-                      501,
-                      (i) => Center(
-                        child: Text(
-                          '$i',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 26,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                const Text(
-                  '.',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                SizedBox(
-                  width: 80,
-                  height: 200,
-                  child: CupertinoPicker(
-                    scrollController: FixedExtentScrollController(
-                      initialItem: decimals.indexOf(selectedDecimal),
-                    ),
-                    itemExtent: 36,
-                    looping: true,
-                    onSelectedItemChanged: (index) {
-                      selectedDecimal = decimals[index];
-                    },
-                    children: decimals
-                        .map(
-                          (d) => Center(
-                            child: Text(
-                              '$d',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 26,
-                              ),
-                            ),
-                          ),
-                        )
-                        .toList(),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.only(left: 8),
-                  child: Text(
-                    _unit,
-                    style: const TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 20),
-        ],
-      ),
-    );
-  }
-
   void _finishSession() {
-    _stopTimer();
+    stopTimer();
     final duration = DateTime.now().difference(_sessionStart);
     Navigator.pushReplacement(
       context,
@@ -472,7 +189,18 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
                         Icons.timer_outlined,
                         color: AppColors.textSecondary,
                       ),
-                      onPressed: _showTimerPicker,
+                      onPressed: () async {
+                        final seconds = await RoutineService.loadRestTimer(
+                          exercise.exercise.name,
+                        );
+                        if (mounted) {
+                          showTimerPicker(
+                            context,
+                            exercise.exercise.name,
+                            seconds,
+                          );
+                        }
+                      },
                     ),
                   ],
                 ),
@@ -551,48 +279,61 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
                                 ),
                               ),
                               const Spacer(),
-                              if (_lastWeights.containsKey(dateKey) ||
-                                  hasWeight)
-                                if (hasWeight)
-                                  GestureDetector(
-                                    onTap: () => _showSerieHistory(
-                                      exercise.exercise.name,
-                                      i,
-                                    ),
-                                    child: Padding(
-                                      padding: const EdgeInsets.only(right: 8),
-                                      child: SizedBox(
-                                        width: 70,
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.end,
-                                          children: [
-                                            const Text(
-                                              'último',
-                                              style: TextStyle(
-                                                color: AppColors.primary,
-                                                fontSize: 9,
-                                                decoration:
-                                                    TextDecoration.underline,
-                                              ),
+                              if (hasWeight)
+                                GestureDetector(
+                                  onTap: () => showSerieHistory(
+                                    context,
+                                    exercise.exercise.name,
+                                    i,
+                                  ),
+                                  child: Padding(
+                                    padding: const EdgeInsets.only(right: 8),
+                                    child: SizedBox(
+                                      width: 70,
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.end,
+                                        children: [
+                                          const Text(
+                                            'último',
+                                            style: TextStyle(
+                                              color: AppColors.primary,
+                                              fontSize: 9,
+                                              decoration:
+                                                  TextDecoration.underline,
                                             ),
-                                            Text(
-                                              _lastWeights.containsKey(dateKey)
-                                                  ? '${_lastWeights[dateKey]} $_unit'
-                                                  : '${serie.weight} $_unit',
-                                              style: TextStyle(
-                                                color: AppColors.textSecondary,
-                                                fontSize: 12,
-                                                fontWeight: FontWeight.bold,
-                                              ),
+                                          ),
+                                          Text(
+                                            _lastWeights.containsKey(dateKey)
+                                                ? '${_lastWeights[dateKey]} $unit'
+                                                : '${serie.weight} $unit',
+                                            style: TextStyle(
+                                              color: AppColors.textSecondary,
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.bold,
                                             ),
-                                          ],
-                                        ),
+                                          ),
+                                        ],
                                       ),
                                     ),
                                   ),
+                                ),
                               GestureDetector(
-                                onTap: () => _editSerieWeight(serie, i),
+                                onTap: () => showWeightPicker(
+                                  context,
+                                  serie: isToday
+                                      ? serie
+                                      : Serie(reps: serie.reps),
+                                  exerciseName: exercise.exercise.name,
+                                  serieIndex: i,
+                                  rutinaId: widget.routine.id,
+                                  originalSerie: serie,
+                                  onWeightSaved: (newWeight) {
+                                    setState(() {
+                                      _weightDates[dateKey] = DateTime.now();
+                                    });
+                                  },
+                                ),
                                 child: Container(
                                   padding: const EdgeInsets.symmetric(
                                     horizontal: 16,
@@ -611,8 +352,8 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
                                   ),
                                   child: Text(
                                     isToday && hasWeight
-                                        ? '${serie.weight} $_unit'
-                                        : '— $_unit',
+                                        ? '${serie.weight} $unit'
+                                        : '— $unit',
                                     style: TextStyle(
                                       color: AppColors.primary,
                                       fontWeight: FontWeight.bold,
@@ -638,7 +379,7 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
                       if (_isLastExercise) {
                         _finishSession();
                       } else {
-                        _stopTimer();
+                        stopTimer();
                         setState(() => _currentIndex++);
                         _loadWeights();
                       }
@@ -668,160 +409,8 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
             ),
           ),
 
-          // Banner del timer
-          if (_activeTimer != null)
-            Positioned(
-              bottom: 90,
-              left: 16,
-              right: 16,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 14,
-                ),
-                decoration: BoxDecoration(
-                  color: AppColors.backgroundAppBar,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: _activeTimer! > 0
-                        ? AppColors.primary
-                        : AppColors.secondary,
-                    width: 1.5,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.4),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      _activeTimer! > 0
-                          ? Icons.timer_outlined
-                          : Icons.check_circle_outline,
-                      color: _activeTimer! > 0
-                          ? AppColors.primary
-                          : AppColors.secondary,
-                      size: 24,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        _activeTimer! > 0
-                            ? 'Descansando...'
-                            : '¡Listo para la siguiente serie!',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 13,
-                        ),
-                      ),
-                    ),
-                    if (_activeTimer! > 0)
-                      Text(
-                        '${_activeTimer}s',
-                        style: TextStyle(
-                          color: AppColors.primary,
-                          fontSize: 24,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                    const SizedBox(width: 8),
-                    GestureDetector(
-                      onTap: _stopTimer,
-                      child: const Icon(
-                        Icons.close,
-                        color: AppColors.textSecondary,
-                        size: 20,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+          buildTimerBanner(),
         ],
-      ),
-    );
-  }
-
-  void _showSerieHistory(String exerciseName, int serieIndex) async {
-    final history = await RoutineService.loadSerieHistory(
-      exerciseName: exerciseName,
-      serieIndex: serieIndex,
-    );
-
-    if (!mounted) return;
-
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: AppColors.backgroundAppBar,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'HISTORIAL — SERIE ${serieIndex + 1}',
-              style: const TextStyle(
-                color: AppColors.textSecondary,
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 1.5,
-              ),
-            ),
-            const SizedBox(height: 16),
-            if (history.isEmpty)
-              const Center(
-                child: Padding(
-                  padding: EdgeInsets.symmetric(vertical: 16),
-                  child: Text(
-                    'No hay registros todavía.',
-                    style: TextStyle(color: Colors.white60),
-                  ),
-                ),
-              )
-            else
-              ...history.map(
-                (entry) => Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.calendar_today,
-                        color: AppColors.textSecondary,
-                        size: 14,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        '${entry.date.day}/${entry.date.month}/${entry.date.year}',
-                        style: const TextStyle(
-                          color: AppColors.textSecondary,
-                          fontSize: 13,
-                        ),
-                      ),
-                      const Spacer(),
-                      Text(
-                        '${entry.weight} $_unit',
-                        style: TextStyle(
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 15,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            const SizedBox(height: 8),
-          ],
-        ),
       ),
     );
   }
