@@ -144,7 +144,6 @@ mixin WorkoutMixin<T extends StatefulWidget> on State<T> {
   }
 
   // --- Selector de peso ---
-
   void showWeightPicker(
     BuildContext context, {
     required Serie serie,
@@ -154,8 +153,10 @@ mixin WorkoutMixin<T extends StatefulWidget> on State<T> {
     Serie? originalSerie,
     Function(double)? onWeightSaved,
   }) {
-    int selectedInt = serie.weight.toInt();
-    int selectedDecimal = ((serie.weight - selectedInt) * 100).round();
+    // Usar el peso de la serie original como referencia
+    final referenceSerie = originalSerie ?? serie;
+    int selectedInt = referenceSerie.weight.toInt();
+    int selectedDecimal = ((referenceSerie.weight - selectedInt) * 100).round();
     const decimals = [0, 25, 50, 75];
     if (!decimals.contains(selectedDecimal)) selectedDecimal = 0;
 

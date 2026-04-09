@@ -26,6 +26,7 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen>
   late DateTime _sessionStart;
   Map<String, DateTime?> _weightDates = {};
   Map<String, double> _lastWeights = {};
+  Map<String, String> _notes = {};
 
   @override
   void initState() {
@@ -33,6 +34,13 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen>
     _sessionStart = DateTime.now();
     _loadUnit();
     _loadWeights();
+    _loadNotes();
+  }
+
+  Future<void> _loadNotes() async {
+    final notes = await RoutineService.loadAllNotes(widget.routine.id);
+    if (!mounted) return;
+    setState(() => _notes = notes);
   }
 
   @override
@@ -204,6 +212,43 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen>
                     ),
                   ],
                 ),
+                // Nota del ejercicio
+                if (_notes['${widget.routine.id}_${exercise.exercise.name}'] !=
+                        null &&
+                    _notes['${widget.routine.id}_${exercise.exercise.name}']!
+                        .isNotEmpty)
+                  Container(
+                    width: double.infinity,
+                    margin: const EdgeInsets.only(bottom: 16),
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.05),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: AppColors.primary.withValues(alpha: 0.2),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.sticky_note_2,
+                          color: AppColors.primary,
+                          size: 14,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            _notes['${widget.routine.id}_${exercise.exercise.name}']!,
+                            style: const TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
                 const SizedBox(height: 24),
 
                 // Series
@@ -318,6 +363,46 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen>
                                     ),
                                   ),
                                 ),
+                              GestureDetector(
+                                onTap: () {
+                                  setState(
+                                    () => serie.completed = !serie.completed,
+                                  );
+                                },
+                                child: Container(
+                                  width: 32,
+                                  height: 32,
+                                  margin: const EdgeInsets.only(right: 8),
+                                  decoration: BoxDecoration(
+                                    color: serie.completed
+                                        ? AppColors.secondary.withValues(
+                                            alpha: 0.2,
+                                          )
+                                        : Colors.transparent,
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: serie.completed
+                                          ? AppColors.secondary.withValues(
+                                              alpha: 0.5,
+                                            )
+                                          : isToday && hasWeight
+                                          ? AppColors.primary.withValues(
+                                              alpha: 0.5,
+                                            )
+                                          : AppColors.primary.withValues(
+                                              alpha: 0.2,
+                                            ),
+                                    ),
+                                  ),
+                                  child: serie.completed
+                                      ? Icon(
+                                          Icons.check,
+                                          color: AppColors.secondary,
+                                          size: 18,
+                                        )
+                                      : null,
+                                ),
+                              ),
                               GestureDetector(
                                 onTap: () => showWeightPicker(
                                   context,
